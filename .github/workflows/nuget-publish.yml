@@ -65,13 +65,7 @@ jobs:
         with:
           tag_name: v${{ steps.vars.outputs.version }}
           release_name: Release v${{ steps.vars.outputs.version }}
-          body: |
-            ## What's Changed
-            - ToggleNet.Core v${{ steps.vars.outputs.version }}
-            - ToggleNet.EntityFrameworkCore v${{ steps.vars.outputs.version }}
-            - ToggleNet.Dashboard v${{ steps.vars.outputs.version }}
-            
-            Published to NuGet: https://www.nuget.org/packages
+          body: ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
 
