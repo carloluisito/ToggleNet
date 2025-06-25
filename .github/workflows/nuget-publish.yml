@@ -31,25 +31,13 @@ jobs:
         run: echo "::set-output name=version::1.0.${{ github.run_number }}"
 
       - name: Pack ToggleNet.Core
-        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj \
-              --configuration Release \
-              --no-build \
-              --output ./nupkgs \
-              /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.EntityFrameworkCore
-        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj \
-              --configuration Release \
-              --no-build \
-              --output ./nupkgs \
-              /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.Dashboard
-        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj \
-              --configuration Release \
-              --no-build \
-              --output ./nupkgs \
-              /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: List nupkgs directory contents
         run: |
