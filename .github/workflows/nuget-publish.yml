@@ -1,0 +1,36 @@
+name: Publish NuGet Packages
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Pack ToggleNet.Core
+        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs
+
+      - name: Pack ToggleNet.EntityFrameworkCore
+        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj --configuration Release --no-build --output ./nupkgs
+
+      - name: Pack ToggleNet.Dashboard
+        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs
+
+      - name: Publish to NuGet
+        run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
