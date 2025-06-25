@@ -1,0 +1,60 @@
+# .gitignore for ToggleNet solution (ASP.NET Core, Entity Framework, Visual Studio)
+
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Entity Framework Migrations
+*Migrations/*Designer.cs
+*Migrations/*Snapshot.cs
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Rider
+.idea/
+*.sln.iml
+
+# Others
+*.dbmdl
+*.bak
+*.backup
+*.mdf
+*.ldf
+*.sqlite
+*.pdb
+*.cache
+*.vspscc
+*.vssscc
+
+# npm
+node_modules/
+package-lock.json
+yarn.lock
+
+# Dashboard static assets
+src/ToggleNet.Dashboard/wwwroot/css/

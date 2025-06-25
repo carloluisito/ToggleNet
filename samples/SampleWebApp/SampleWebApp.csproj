@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ToggleNet.Core\ToggleNet.Core.csproj" />
+    <ProjectReference Include="..\..\src\ToggleNet.Dashboard\ToggleNet.Dashboard.csproj" />
+    <ProjectReference Include="..\..\src\ToggleNet.EntityFrameworkCore\ToggleNet.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+</Project>

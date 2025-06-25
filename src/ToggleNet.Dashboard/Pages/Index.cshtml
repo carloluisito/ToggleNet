@@ -1,0 +1,549 @@
+@page
+@model ToggleNet.Dashboard.Pages.IndexModel
+@{
+    ViewData["Title"] = "Feature Flags Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Feature Flags</h1>
+            <p class="text-muted">Managing features for <span class="badge bg-primary">@Model.Environment</span> environment</p>
+        </div>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFlagModal">
+            <i class="bi bi-plus-circle me-2"></i>Add New Flag
+        </button>
+    </div>
+    
+    <form id="antiforgeryForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+    
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Feature Flags</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Name</th>
+                                    <th>Description</th>
+                                    <th class="text-center">Enabled</th>
+                                    <th>Rollout %</th>
+                                    <th>Updated</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (!Model.Flags.Any())
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5">
+                                            <div class="py-4 text-muted">
+                                                <i class="bi bi-flag fs-2 d-block mb-3"></i>
+                                                <h5>No feature flags found</h5>
+                                                <p>Create your first feature flag to get started</p>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createFlagModal">
+                                                    Add New Flag
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var flag in Model.Flags)
+                                    {
+                                        <tr>
+                                            <td class="ps-4 fw-bold text-primary">@flag.Name</td>
+                                            <td class="text-secondary">@flag.Description</td>
+                                            <td class="text-center">
+                                                <div class="form-check form-switch d-flex justify-content-center">
+                                                    <input class="form-check-input toggle-flag" type="checkbox" 
+                                                       data-flag-name="@flag.Name" 
+                                                       @(flag.IsEnabled ? "checked" : "")>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <input type="range" class="form-range rollout-percentage" 
+                                                       data-flag-name="@flag.Name"
+                                                       value="@flag.RolloutPercentage" 
+                                                       min="0" max="100" step="1"
+                                                       style="width: 100px;"
+                                                       @(!flag.IsEnabled ? "disabled" : "")>
+                                                    <span class="rollout-value badge bg-secondary">@flag.RolloutPercentage%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="text-muted small">
+                                                    <i class="bi bi-clock me-1"></i>@flag.UpdatedAt.ToString("MMM d, yyyy h:mm tt")
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <button class="btn btn-sm btn-outline-primary edit-flag" 
+                                                        data-flag-id="@flag.Id"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#editFlagModal">
+                                                    <i class="bi bi-pencil me-1"></i>Edit
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @if (Model.Flags.Any())
+                {
+                    <div class="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Total: @Model.Flags.Count() feature flags</span>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFlagModal">
+                            <i class="bi bi-plus-circle me-2"></i>Add New Flag
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Flag Modal -->
+<div class="modal fade" id="createFlagModal" tabindex="-1" aria-labelledby="createFlagModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="createFlagModalLabel">
+                    <i class="bi bi-flag me-2"></i>Create New Feature Flag
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="createFlagForm">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-4">
+                        <label for="createName" class="form-label fw-bold">Name</label>
+                        <input type="text" class="form-control form-control-lg" id="createName" placeholder="my-feature-name" required>
+                        <div class="form-text">Use kebab-case for consistent naming (e.g., my-new-feature)</div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="createDescription" class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" id="createDescription" rows="3" placeholder="Describe what this feature does..." required></textarea>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="createIsEnabled">
+                                <label class="form-check-label fw-bold" for="createIsEnabled">Enabled</label>
+                                <div class="form-text">Turn the feature on or off globally</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="createEnvironment" class="form-label fw-bold">Environment</label>
+                            <input type="text" class="form-control" id="createEnvironment" value="@Model.Environment" readonly>
+                            <div class="form-text">Current deployment environment</div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="createRolloutPercentage" class="form-label fw-bold d-flex justify-content-between">
+                            <span>Rollout Percentage</span>
+                            <span id="createRolloutValue" class="badge bg-primary">0%</span>
+                        </label>
+                        <input type="range" class="form-range" id="createRolloutPercentage" min="0" max="100" value="0">
+                        <div class="form-text">Control the percentage of users who will see this feature</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveNewFlag">
+                    <i class="bi bi-save me-1"></i>Save Flag
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Flag Modal -->
+<div class="modal fade" id="editFlagModal" tabindex="-1" aria-labelledby="editFlagModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title" id="editFlagModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Feature Flag
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="editFlagForm">
+                    <input type="hidden" id="editId">
+                    <div class="mb-4">
+                        <label for="editName" class="form-label fw-bold">Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                            <input type="text" class="form-control" id="editName" readonly>
+                        </div>
+                        <div class="form-text">Feature name cannot be changed</div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="editDescription" class="form-label fw-bold">Description</label>
+                        <textarea class="form-control" id="editDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editIsEnabled">
+                                <label class="form-check-label fw-bold" for="editIsEnabled">Enabled</label>
+                                <div class="form-text">Turn the feature on or off globally</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="editEnvironment" class="form-label fw-bold">Environment</label>
+                            <input type="text" class="form-control" id="editEnvironment" value="@Model.Environment" readonly>
+                            <div class="form-text">Current deployment environment</div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="editRolloutPercentage" class="form-label fw-bold d-flex justify-content-between">
+                            <span>Rollout Percentage</span>
+                            <span id="editRolloutValue" class="badge bg-primary">0%</span>
+                        </label>
+                        <input type="range" class="form-range" id="editRolloutPercentage" min="0" max="100" value="0">
+                        <div class="form-text">Control the percentage of users who will see this feature</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateFlag">
+                    <i class="bi bi-check2 me-1"></i>Update Flag
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function() {
+            // Show a toast notification
+            function showToast(message, type = 'success') {
+                // Create toast container if it doesn't exist
+                if ($('#toastContainer').length === 0) {
+                    $('body').append(`
+                        <div id="toastContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+                    `);
+                }
+                
+                // Generate a unique ID for this toast
+                const toastId = 'toast-' + Date.now();
+                const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+                const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+                
+                // Create toast element
+                const toast = $(`
+                    <div class="toast align-items-center ${bgClass} text-white border-0 mb-3" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="bi ${icon} me-2"></i>${message}
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                    </div>
+                `);
+                
+                // Add to container and show
+                $('#toastContainer').append(toast);
+                const toastEl = new bootstrap.Toast(document.getElementById(toastId), { 
+                    delay: 3000,
+                    autohide: true
+                });
+                toastEl.show();
+                
+                // Remove from DOM after hiding
+                $(`#${toastId}`).on('hidden.bs.toast', function() {
+                    $(this).remove();
+                });
+            }
+
+            // Toggle flag state
+            $('.toggle-flag').on('change', function() {
+                const flagName = $(this).data('flag-name');
+                const isEnabled = $(this).prop('checked');
+                
+                // Enable/disable the rollout slider based on the toggle state
+                const rolloutSlider = $(this).closest('tr').find('.rollout-percentage');
+                rolloutSlider.prop('disabled', !isEnabled);
+                
+                // Provide immediate visual feedback
+                $(this).closest('tr').fadeTo(100, 0.5).fadeTo(200, 1.0);
+                
+                // Update flag status
+                updateFlagStatus(flagName, isEnabled);
+                
+                // Show toast
+                showToast(`Feature "${flagName}" has been ${isEnabled ? 'enabled' : 'disabled'}`);
+            });
+            
+            // Update rollout percentage
+            $('.rollout-percentage').on('input', function() {
+                const value = $(this).val();
+                $(this).closest('td').find('.rollout-value').text(value + '%');
+            });
+            
+            $('.rollout-percentage').on('change', function() {
+                const flagName = $(this).data('flag-name');
+                const rolloutPercentage = parseInt($(this).val());
+                
+                // Update the badge class based on percentage
+                const badge = $(this).closest('td').find('.rollout-value');
+                badge.removeClass('bg-secondary bg-warning bg-success bg-danger');
+                
+                if (rolloutPercentage === 0) {
+                    badge.addClass('bg-secondary');
+                } else if (rolloutPercentage < 25) {
+                    badge.addClass('bg-danger');
+                } else if (rolloutPercentage < 100) {
+                    badge.addClass('bg-warning');
+                } else {
+                    badge.addClass('bg-success');
+                }
+                
+                // Update rollout percentage
+                updateRolloutPercentage(flagName, rolloutPercentage);
+                
+                // Show toast
+                showToast(`Rollout percentage for "${flagName}" updated to ${rolloutPercentage}%`);
+            });
+            
+            // Create flag modal
+            $('#createRolloutPercentage').on('input', function() {
+                const value = $(this).val();
+                const badge = $('#createRolloutValue');
+                badge.text(value + '%');
+                
+                // Update badge color based on percentage
+                badge.removeClass('bg-primary bg-secondary bg-warning bg-success bg-danger');
+                
+                if (value == 0) {
+                    badge.addClass('bg-secondary');
+                } else if (value < 25) {
+                    badge.addClass('bg-danger');
+                } else if (value < 100) {
+                    badge.addClass('bg-warning');
+                } else {
+                    badge.addClass('bg-success');
+                }
+            });
+            
+            // Reset create modal form when opened
+            $('#createFlagModal').on('show.bs.modal', function() {
+                $('#createFlagForm')[0].reset();
+                $('#createName').focus();
+                $('#createRolloutValue').text('0%').removeClass('bg-warning bg-success bg-danger').addClass('bg-secondary');
+            });
+            
+            // Save new flag
+            $('#saveNewFlag').on('click', function() {
+                const name = $('#createName').val();
+                const description = $('#createDescription').val();
+                const isEnabled = $('#createIsEnabled').prop('checked');
+                const rolloutPercentage = parseInt($('#createRolloutPercentage').val());
+                const environment = $('#createEnvironment').val();
+                
+                if (!name || !description) {
+                    alert('Name and description are required');
+                    return;
+                }
+                
+                // Save new flag
+                console.log('Submitting flag data:', {
+                    name,
+                    description,
+                    isEnabled,
+                    rolloutPercentage,
+                    environment
+                });
+                
+                var token = $('input:hidden[name="__RequestVerificationToken"]').val();
+                console.log('Token:', token);
+                
+                $.ajax({
+                    url: '?handler=CreateFlag',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        name,
+                        description,
+                        isEnabled,
+                        rolloutPercentage,
+                        environment
+                    }),
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-CSRF-TOKEN': token
+                    },
+                    success: function(response) {
+                        console.log('Success response:', response);
+                        showToast(`Feature flag "${name}" created successfully`);
+                        
+                        // Dismiss modal before reloading
+                        $('#createFlagModal').modal('hide');
+                        
+                        // Reload page with a slight delay to show toast
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    },
+                    complete: function(xhr, status) {
+                        console.log('AJAX complete - Status:', status, 'Response:', xhr.responseText);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error creating flag:', { status: status, error: error, response: xhr.responseText, xhr: xhr });
+                        showToast('Error creating flag: ' + (xhr.responseText || error || 'Unknown error occurred'), 'error');
+                    }
+                });
+            });
+            
+            // Edit flag modal
+            $('.edit-flag').on('click', function() {
+                const row = $(this).closest('tr');
+                
+                const id = $(this).data('flag-id');
+                const name = row.find('td:nth-child(1)').text();
+                const description = row.find('td:nth-child(2)').text();
+                const isEnabled = row.find('.toggle-flag').prop('checked');
+                const rolloutPercentage = parseInt(row.find('.rollout-percentage').val());
+                
+                $('#editId').val(id);
+                $('#editName').val(name);
+                $('#editDescription').val(description);
+                $('#editIsEnabled').prop('checked', isEnabled);
+                $('#editRolloutPercentage').val(rolloutPercentage);
+                $('#editRolloutValue').text(rolloutPercentage + '%');
+            });
+            
+            // Edit rollout percentage in modal
+            $('#editRolloutPercentage').on('input', function() {
+                const value = $(this).val();
+                const badge = $('#editRolloutValue');
+                badge.text(value + '%');
+                
+                // Update badge color based on percentage
+                badge.removeClass('bg-primary bg-secondary bg-warning bg-success bg-danger');
+                
+                if (value == 0) {
+                    badge.addClass('bg-secondary');
+                } else if (value < 25) {
+                    badge.addClass('bg-danger');
+                } else if (value < 100) {
+                    badge.addClass('bg-warning');
+                } else {
+                    badge.addClass('bg-success');
+                }
+            });
+            
+            // Update flag
+            $('#updateFlag').on('click', function() {
+                const id = $('#editId').val();
+                const name = $('#editName').val();
+                const description = $('#editDescription').val();
+                const isEnabled = $('#editIsEnabled').prop('checked');
+                const rolloutPercentage = parseInt($('#editRolloutPercentage').val());
+                const environment = $('#editEnvironment').val();
+                
+                // Update flag
+                $.ajax({
+                    url: '?handler=UpdateFlag',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        id,
+                        name,
+                        description,
+                        isEnabled,
+                        rolloutPercentage,
+                        environment
+                    }),
+                    headers: {
+                        'RequestVerificationToken': $('input:hidden[name="__RequestVerificationToken"]').val(),
+                        'X-CSRF-TOKEN': $('input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function() {
+                        showToast(`Feature flag "${name}" updated successfully`);
+                        
+                        // Dismiss modal before reloading
+                        $('#editFlagModal').modal('hide');
+                        
+                        // Reload page with a slight delay to show toast
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error updating flag:', xhr.responseText);
+                        showToast('Error updating flag: ' + (xhr.responseText || error || 'Unknown error occurred'), 'error');
+                    }
+                });
+            });
+            
+            // Helper function to update flag status
+            function updateFlagStatus(flagName, isEnabled) {
+                $.ajax({
+                    url: '?handler=UpdateFlagStatus',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        name: flagName,
+                        isEnabled: isEnabled
+                    }),
+                    headers: {
+                        'RequestVerificationToken': $('input:hidden[name="__RequestVerificationToken"]').val(),
+                        'X-CSRF-TOKEN': $('input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error updating flag status:', xhr.responseText);
+                        showToast('Error updating flag status: ' + (xhr.responseText || error || 'Unknown error occurred'), 'error');
+                        
+                        // Reload to reset UI state with a slight delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    }
+                });
+            }
+            
+            // Helper function to update rollout percentage
+            function updateRolloutPercentage(flagName, rolloutPercentage) {
+                $.ajax({
+                    url: '?handler=UpdateRolloutPercentage',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        name: flagName,
+                        rolloutPercentage: rolloutPercentage
+                    }),
+                    headers: {
+                        'RequestVerificationToken': $('input:hidden[name="__RequestVerificationToken"]').val(),
+                        'X-CSRF-TOKEN': $('input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error updating rollout percentage:', xhr.responseText);
+                        showToast('Error updating rollout percentage: ' + (xhr.responseText || error || 'Unknown error occurred'), 'error');
+                        
+                        // Reload to reset UI state with a slight delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    }
+                });
+            }
+        });
+    </script>
+}

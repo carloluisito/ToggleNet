@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Change User";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Change User</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="ChangeUser" method="post">
+                        <div class="mb-3">
+                            <label for="userId" class="form-label">User ID</label>
+                            <input type="text" class="form-control" id="userId" name="userId" placeholder="Enter a user ID">
+                            <div class="form-text">
+                                Enter any user ID to test different rollout percentages.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

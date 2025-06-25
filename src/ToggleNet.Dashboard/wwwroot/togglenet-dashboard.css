@@ -1,0 +1,101 @@
+:root {
+    --primary-color: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --success-color: #198754;
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+.card {
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.card-header {
+    border-top-left-radius: 0.5rem !important;
+    border-top-right-radius: 0.5rem !important;
+}
+
+table thead th {
+    font-weight: 600;
+    color: #495057;
+    border-bottom-width: 1px !important;
+}
+
+.form-check-input:checked {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    cursor: pointer;
+}
+
+.rollout-value {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.form-range {
+    cursor: pointer;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: var(--primary-color);
+    cursor: pointer;
+}
+
+.form-range::-moz-range-thumb {
+    background: var(--primary-color);
+    cursor: pointer;
+}
+
+.form-range:disabled::-webkit-slider-thumb {
+    background: #adb5bd;
+}
+
+.form-range:disabled::-moz-range-thumb {
+    background: #adb5bd;
+}
+
+.btn {
+    font-weight: 500;
+    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+}
+
+.modal-content {
+    border-radius: 0.5rem;
+}
+
+.modal-header, .modal-footer {
+    padding: 1rem 1.5rem;
+}
+
+.form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+/* Animation for toggle switches */
+.form-switch .form-check-input:checked {
+    transition: background-position 0.15s ease-in-out, background-color 0.25s ease;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.35em 0.65em;
+}
