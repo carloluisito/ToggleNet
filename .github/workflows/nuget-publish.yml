@@ -53,7 +53,9 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           echo "Publishing all packages in ./nupkgs"
-          dotnet nuget push ./nupkgs/*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+          Get-ChildItem ./nupkgs/*.nupkg | ForEach-Object {
+            dotnet nuget push $_.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+          }
 
       - name: Create GitHub Release
         id: create_release
