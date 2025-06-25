@@ -31,13 +31,25 @@ jobs:
         run: echo "::set-output name=version::1.0.${{ github.run_number }}"
 
       - name: Pack ToggleNet.Core
-        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj \
+              --configuration Release \
+              --no-build \
+              --output ./nupkgs \
+              /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.EntityFrameworkCore
-        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj \
+              --configuration Release \
+              --no-build \
+              --output ./nupkgs \
+              /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.Dashboard
-        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
+        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj \
+              --configuration Release \
+              --no-build \
+              --output ./nupkgs \
+              /p:Version=${{ steps.vars.outputs.version }}
 
       - name: List nupkgs directory contents
         run: |
@@ -45,4 +57,12 @@ jobs:
           dir ./nupkgs
 
       - name: Publish to NuGet
-        run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          echo "Publishing all packages in ./nupkgs"
+          dotnet nuget push ./nupkgs/*.nupkg \
+            --api-key $NUGET_API_KEY \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
