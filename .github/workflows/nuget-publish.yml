@@ -39,5 +39,10 @@ jobs:
       - name: Pack ToggleNet.Dashboard
         run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
+      - name: List nupkgs directory contents
+        run: |
+          echo "Listing contents of ./nupkgs:"
+          dir ./nupkgs
+
       - name: Publish to NuGet
         run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
