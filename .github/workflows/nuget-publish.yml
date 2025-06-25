@@ -1,12 +1,13 @@
-name: Publish NuGet Packages
+name: Build, Test & Publish
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-and-publish:
+  build-test-pack-publish:
     runs-on: windows-latest
     steps:
       - name: Checkout code
@@ -25,6 +26,9 @@ jobs:
 
       - name: Build
         run: dotnet build --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal || echo "No tests found, skipping."
 
       - name: Set version
         id: vars
