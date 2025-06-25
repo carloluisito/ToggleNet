@@ -125,28 +125,11 @@ app.UseToggleNetDashboard("/my-feature-flags");
 
 Check out the `samples/SampleWebApp` project for a complete example of how to use ToggleNet in an ASP.NET Core application.
 
-## Migration
+## Database Setup
 
-To setup the database, run the following commands:
+**No manual migration required!**
 
-### For PostgreSQL:
-
-```bash
-# Update database
-dotnet ef database update -p src/ToggleNet.EntityFrameworkCore
-```
-
-### For SQL Server:
-
-```bash
-# Set environment variable to specify SQL Server context
-set TOGGLENET_DATABASE_PROVIDER=SqlServer
-
-# Update database 
-dotnet ef database update -p src/ToggleNet.EntityFrameworkCore -c FeatureFlagsDbContext
-```
-
-The migration files for both database providers are already included in the project.
+ToggleNet automatically applies any pending database migrations and ensures the required tables are created at application startup. You do not need to run `dotnet ef database update` or manage migrations manually.
 
 ## License
 
