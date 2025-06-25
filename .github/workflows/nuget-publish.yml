@@ -28,7 +28,7 @@ jobs:
 
       - name: Set version
         id: vars
-        run: echo "::set-output name=version::1.0.${{ github.run_number }}"
+        run: echo "version=1.0.${{ github.run_number }}" >> $env:GITHUB_OUTPUT
 
       - name: Pack ToggleNet.Core
         run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
@@ -45,12 +45,40 @@ jobs:
           dir ./nupkgs
 
       - name: Publish to NuGet
-        shell: bash
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           echo "Publishing all packages in ./nupkgs"
-          dotnet nuget push ./nupkgs/*.nupkg \
-            --api-key $NUGET_API_KEY \
-            --source https://api.nuget.org/v3/index.json \
-            --skip-duplicate
+          dotnet nuget push ./nupkgs/*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.vars.outputs.version }}
+          release_name: Release v${{ steps.vars.outputs.version }}
+          body: |
+            ## What's Changed
+            - ToggleNet.Core v${{ steps.vars.outputs.version }}
+            - ToggleNet.EntityFrameworkCore v${{ steps.vars.outputs.version }}
+            - ToggleNet.Dashboard v${{ steps.vars.outputs.version }}
+            
+            Published to NuGet: https://www.nuget.org/packages
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        run: |
+          $release_id = "${{ steps.create_release.outputs.id }}"
+          Get-ChildItem ./nupkgs/*.nupkg | ForEach-Object {
+            $asset_name = $_.Name
+            $asset_path = $_.FullName
+            echo "Uploading $asset_name"
+            curl -X POST `
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
+              -H "Content-Type: application/octet-stream" `
+              --data-binary "@$asset_path" `
+              "https://uploads.github.com/repos/${{ github.repository }}/releases/$release_id/assets?name=$asset_name"
+          }
