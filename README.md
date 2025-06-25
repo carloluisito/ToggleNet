@@ -1,5 +1,7 @@
 # ToggleNet
 
+![Build Status](https://github.com/carloluisito/ToggleNet/actions/workflows/build.yml/badge.svg?branch=main)
+
 A .NET Standard-compatible Feature Flag SDK similar in style to Hangfire. ToggleNet allows .NET applications to manage and evaluate feature flags with persistent storage, percentage rollout support, per-user flag evaluation, and an embedded dashboard.
 
 ## Features
