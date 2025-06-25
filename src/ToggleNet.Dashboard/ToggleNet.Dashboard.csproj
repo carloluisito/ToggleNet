@@ -3,6 +3,13 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <PackageId>ToggleNet.Dashboard</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>carlo</Authors>
+    <Description>Embedded ASP.NET Core Razor Pages dashboard for managing ToggleNet feature flags.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/carloluisito/ToggleNet</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/carloluisito/ToggleNet</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
