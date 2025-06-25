@@ -3,7 +3,7 @@ name: Publish NuGet Packages
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build-and-publish:
@@ -23,14 +23,18 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
 
+      - name: Set version
+        id: vars
+        run: echo "::set-output name=version::1.0.${{ github.run_number }}"
+
       - name: Pack ToggleNet.Core
-        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs
+        run: dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.EntityFrameworkCore
-        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj --configuration Release --no-build --output ./nupkgs
+        run: dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Pack ToggleNet.Dashboard
-        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs
+        run: dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj --configuration Release --no-build --output ./nupkgs /p:Version=${{ steps.vars.outputs.version }}
 
       - name: Publish to NuGet
         run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
