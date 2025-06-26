@@ -4,6 +4,16 @@
 
 A .NET Standard-compatible Feature Flag SDK similar in style to Hangfire. ToggleNet allows .NET applications to manage and evaluate feature flags with persistent storage, percentage rollout support, per-user flag evaluation, and an embedded dashboard.
 
+## Running Tests
+
+To run unit tests locally:
+
+```bash
+dotnet test tests/ToggleNet.Core.Tests/ToggleNet.Core.Tests.csproj
+```
+
+Tests are also run automatically in CI before NuGet deployment.
+
 ## Features
 
 - .NET Standard 2.0 compatible SDK for use across .NET frameworks
