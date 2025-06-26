@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using ToggleNet.Dashboard;
+using ToggleNet.Dashboard.Auth;
 using ToggleNet.EntityFrameworkCore.Extensions;
 
 namespace SampleWebApp
@@ -40,8 +41,20 @@ namespace SampleWebApp
                     environment);
             }
 
-            // Add the dashboard
-            services.AddToggleNetDashboard();
+            // Add the dashboard with authentication and specific credentials
+            services.AddToggleNetDashboard(
+                new DashboardUserCredential 
+                { 
+                    Username = "admin", 
+                    Password = "admin", 
+                    DisplayName = "Administrator" 
+                },
+                new DashboardUserCredential
+                {
+                    Username = "user",
+                    Password = "password",
+                    DisplayName = "Regular User"
+                });
 
             // Add controllers for the sample app
             services.AddControllersWithViews();

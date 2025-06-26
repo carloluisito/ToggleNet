@@ -16,6 +16,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <!-- Consider updating or removing this package if not compatible with .NET 9 -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.0-preview.4.24267.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>

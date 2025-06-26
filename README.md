@@ -21,6 +21,7 @@ Tests are also run automatically in CI before NuGet deployment.
 - Percentage-based rollout support
 - User-specific feature flag evaluation
 - Embedded dashboard for managing feature flags
+- Secure dashboard access with authentication
 - Multiple environment support
 
 ## Projects
@@ -46,6 +47,8 @@ dotnet add package ToggleNet.Dashboard
 In your `Startup.cs` file, add the following:
 
 ```csharp
+using ToggleNet.Dashboard;
+using ToggleNet.Dashboard.Auth; // Required for authentication
 // For PostgreSQL:
 services.AddEfCoreFeatureStorePostgres(
     Configuration.GetConnectionString("PostgresConnection"),
@@ -56,11 +59,22 @@ services.AddEfCoreFeatureStoreSqlServer(
     Configuration.GetConnectionString("SqlServerConnection"),
     "Development");
 
-// Add the dashboard
-services.AddToggleNetDashboard();
 
-// In Configure method
-app.UseToggleNetDashboard();
+// Add the dashboard with authentication (recommended for production)
+services.AddToggleNetDashboard(
+    new DashboardUserCredential 
+    { 
+        Username = "admin", 
+        Password = "admin123", 
+        DisplayName = "Administrator" 
+    },
+    new DashboardUserCredential
+    {
+        Username = "developer",
+        Password = "dev123",
+        DisplayName = "Developer"
+    }
+);
 ```
 
 You can also configure the database provider dynamically:
@@ -133,6 +147,28 @@ The dashboard is accessible at `/feature-flags` by default. You can customize th
 app.UseToggleNetDashboard("/my-feature-flags");
 ```
 
+### Dashboard Authentication
+
+For security, the dashboard includes authentication similar to Hangfire's approach:
+
+```csharp
+// Add authentication with predefined users
+services.AddToggleNetDashboard(
+    new DashboardUserCredential 
+    { 
+        Username = "admin", 
+        Password = "strongpassword", 
+        DisplayName = "Administrator" 
+    },
+    // Add as many users as needed
+    new DashboardUserCredential 
+    { 
+        Username = "developer", 
+        Password = "devpassword"
+    }
+);
+```
+
 ## Sample Application
 
 Check out the `samples/SampleWebApp` project for a complete example of how to use ToggleNet in an ASP.NET Core application.
@@ -142,6 +178,14 @@ Check out the `samples/SampleWebApp` project for a complete example of how to us
 **No manual migration required!**
 
 ToggleNet automatically applies any pending database migrations and ensures the required tables are created at application startup. You do not need to run `dotnet ef database update` or manage migrations manually.
+
+## Security
+
+The ToggleNet dashboard is protected by authentication to prevent unauthorized access to feature flag management. 
+
+If you're upgrading from a previous version of ToggleNet, note that authentication is enabled by default.
+
+For production environments, always enable authentication and use strong passwords.
 
 ## License
 
