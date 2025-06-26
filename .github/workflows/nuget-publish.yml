@@ -28,7 +28,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal --logger "trx;LogFileName=test_results.trx"
+        run: dotnet test --verbosity normal --logger "trx;LogFileName=test_results.trx"
 
       - name: Set version
         id: vars
