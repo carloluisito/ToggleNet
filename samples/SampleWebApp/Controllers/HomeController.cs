@@ -17,8 +17,8 @@ namespace SampleWebApp.Controllers
 
         public async Task<IActionResult> Index()
         {
-            // Sample user ID to demonstrate user-specific feature flags
-            string userId = "user-123";
+            // Read user ID from cookie, fallback to default
+            string userId = Request.Cookies["SampleUserId"] ?? "user-123";
 
             // Get the state of all feature flags for the current user
             var enabledFlags = await _featureFlagManager.GetEnabledFlagsForUserAsync(userId);
