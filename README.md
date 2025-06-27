@@ -126,6 +126,45 @@ public class HomeController : Controller
 }
 ```
 
+### Analytics and Usage Tracking
+
+ToggleNet includes built-in feature usage analytics to help you understand how your features are being used.
+
+```csharp
+public class HomeController : Controller
+{
+    private readonly FeatureFlagManager _featureFlagManager;
+    
+    public HomeController(FeatureFlagManager featureFlagManager)
+    {
+        _featureFlagManager = featureFlagManager;
+    }
+    
+    public async Task<IActionResult> Index()
+    {
+        // Usage is automatically tracked when IsEnabledAsync is called with a user ID
+        // But you can also track usage explicitly:
+        await _featureFlagManager.TrackFeatureUsageAsync("feature-name", "user-id", "Additional context data");
+        
+        // Enable or disable tracking globally
+        _featureFlagManager.EnableTracking(true);
+        
+        // Check if tracking is currently enabled
+        bool isTrackingEnabled = _featureFlagManager.IsTrackingEnabled;
+        
+        return View();
+    }
+}
+```
+
+The analytics dashboard at `/feature-flags/Analytics` provides insights including:
+
+* Unique user counts for each feature
+* Total usage metrics
+* Daily usage trends with time-based filtering (7, 30, 90 days)
+* Individual feature usage events with user IDs and timestamps
+* Ability to enable/disable usage tracking directly from the dashboard
+
 ## Custom Feature Store
 
 You can implement your own feature store by implementing the `IFeatureStore` interface:
@@ -148,6 +187,14 @@ The dashboard is accessible at `/feature-flags` by default. You can customize th
 app.UseToggleNetDashboard("/my-feature-flags");
 ```
 
+The dashboard provides multiple pages:
+* **Dashboard Home**: Manage and configure feature flags
+* **Analytics**: View usage statistics, trends, and individual usage events
+  * Filter by time period (7, 30, or 90 days)
+  * View unique user counts and total usage metrics
+  * Enable/disable tracking directly from the interface
+  * See detailed usage events with user IDs and timestamps
+  
 ### Dashboard Authentication
 
 For security, the dashboard includes authentication similar to Hangfire's approach:
