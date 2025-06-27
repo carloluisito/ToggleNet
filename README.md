@@ -22,6 +22,7 @@ Tests are also run automatically in CI before NuGet deployment.
 - User-specific feature flag evaluation
 - Embedded dashboard for managing feature flags
 - Secure dashboard access with authentication
+- Feature usage analytics and tracking
 - Multiple environment support
 
 ## Projects
