@@ -1,0 +1,70 @@
+/* Dark mode styles */
+body.dark-mode {
+    background-color: #121212;
+    color: #e0e0e0;
+}
+
+body.dark-mode .card {
+    background-color: #1e1e1e;
+    border-color: #2d2d2d;
+}
+
+body.dark-mode .card-header:not(.bg-primary) {
+    background-color: #2d2d2d !important;
+    color: #e0e0e0;
+}
+
+body.dark-mode .card-body {
+    background-color: #1e1e1e;
+}
+
+body.dark-mode .alert-info {
+    background-color: #0c2d48;
+    color: #e0e0e0;
+    border-color: #164b78;
+}
+
+body.dark-mode .alert-warning {
+    background-color: #3a2e0b;
+    color: #e0e0e0;
+    border-color: #5e4a14;
+}
+
+body.dark-mode .list-group-item {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border-color: #3d3d3d;
+}
+
+body.dark-mode .badge.bg-secondary {
+    background-color: #505050 !important;
+}
+
+body.dark-mode .text-muted {
+    color: #9e9e9e !important;
+}
+
+body.dark-mode .btn-outline-primary {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+body.dark-mode .btn-outline-primary:hover {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+body.dark-mode .btn-outline-secondary {
+    border-color: #6c757d;
+    color: #6c757d;
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+body.dark-mode #featureUsageLog {
+    background-color: #252525 !important;
+    border-color: #3d3d3d !important;
+}

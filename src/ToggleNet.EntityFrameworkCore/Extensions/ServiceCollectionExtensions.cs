@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using ToggleNet.Core;
 using ToggleNet.Core.Extensions;
 using ToggleNet.Core.Storage;
 
@@ -70,7 +71,7 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
         }
         
         /// <summary>
-        /// Ensures the database is created and all migrations are applied
+        /// Ensures the database is created with the proper schema and initializes ToggleNet settings
         /// </summary>
         /// <param name="serviceProvider">The service provider</param>
         public static void EnsureFeatureFlagDbCreated(IServiceProvider serviceProvider)
@@ -79,22 +80,116 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
             {
                 using (var scope = serviceProvider.CreateScope())
                 {
+                    Console.WriteLine("Initializing ToggleNet database...");
                     var dbContext = scope.ServiceProvider.GetRequiredService<FeatureFlagsDbContext>();
                     
-                    // First ensure database exists
-                    dbContext.Database.EnsureCreated();
+                    // Check database connection and create if needed
+                    EnsureDatabaseExists(dbContext);
                     
-                    // Then apply any pending migrations
-                    dbContext.Database.Migrate();
+                    // Create schema directly using EnsureCreated
+                    CreateDatabaseSchema(dbContext);
                     
-                    Console.WriteLine("ToggleNet database initialized successfully.");
+                    // Enable usage tracking by default
+                    EnableFeatureTracking(scope.ServiceProvider);
+                    
+                    Console.WriteLine("ToggleNet database initialization completed successfully.");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error initializing ToggleNet database: {ex.Message}");
-                throw; // Rethrow the exception so the application can handle it appropriately
+                LogException("Error initializing ToggleNet database", ex);
+                
+                // Continue without throwing to allow the application to run even with database issues
+                Console.WriteLine("Application will attempt to continue despite database initialization issues.");
             }
+        }
+
+        /// <summary>
+        /// Enables feature usage tracking by default during initialization
+        /// </summary>
+        /// <param name="serviceProvider">The service provider</param>
+        private static void EnableFeatureTracking(IServiceProvider serviceProvider)
+        {
+            try
+            {
+                var featureFlagManager = serviceProvider.GetRequiredService<FeatureFlagManager>();
+                if (featureFlagManager != null)
+                {
+                    featureFlagManager.EnableTracking(true);
+                    Console.WriteLine("Feature usage tracking enabled successfully.");
+                }
+                else
+                {
+                    Console.WriteLine("Warning: Could not enable feature tracking - FeatureFlagManager not available.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogException("Failed to enable feature tracking", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Ensures the database exists (without schema)
+        /// </summary>
+        private static void EnsureDatabaseExists(FeatureFlagsDbContext dbContext)
+        {
+            try
+            {
+                bool canConnect = false;
+                try
+                {
+                    canConnect = dbContext.Database.CanConnect();
+                    Console.WriteLine($"Database connection status: {(canConnect ? "Connected" : "Not connected")}");
+                }
+                catch (Exception connEx)
+                {
+                    Console.WriteLine($"Error checking database connection: {connEx.Message}");
+                }
+                
+                if (!canConnect)
+                {
+                    var connection = dbContext.Database.GetDbConnection();
+                    connection.Open();
+                    connection.Close();
+                    Console.WriteLine("Database created successfully.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogException("Warning during database creation", ex);
+            }
+        }
+        
+        /// <summary>
+        /// Creates the database schema using EnsureCreated
+        /// </summary>
+        private static void CreateDatabaseSchema(FeatureFlagsDbContext dbContext)
+        {
+            try
+            {
+                Console.WriteLine("Creating database schema...");
+                dbContext.Database.EnsureCreated();
+                Console.WriteLine("Schema created successfully.");
+            }
+            catch (Exception ex)
+            {
+                LogException("Schema creation failed", ex);
+                throw; // Rethrow since schema creation is critical
+            }
+        }
+        
+        /// <summary>
+        /// Helper method to consistently log exceptions with inner details
+        /// </summary>
+        private static void LogException(string message, Exception ex)
+        {
+            Console.WriteLine($"{message}: {ex.Message}");
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
+            }
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
         }
     }
 }

@@ -57,6 +57,51 @@ namespace ToggleNet.EntityFrameworkCore.Migrations.SqlServer
 
                     b.ToTable("ToggleNet_FeatureFlags");
                 });
+
+            modelBuilder.Entity("ToggleNet.Core.Entities.FeatureUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdditionalData")
+                        .HasColumnType("nvarchar(4000)")
+                        .HasMaxLength(4000);
+
+                    b.Property<string>("Environment")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(50)")
+                        .HasMaxLength(50);
+
+                    b.Property<string>("FeatureName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(100)")
+                        .HasMaxLength(100);
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(100)")
+                        .HasMaxLength(100);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Environment");
+
+                    b.HasIndex("FeatureName");
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("FeatureName", "Environment");
+
+                    b.HasIndex("FeatureName", "UserId", "Environment");
+
+                    b.ToTable("ToggleNet_FeatureUsages");
+                });
 #pragma warning restore 612, 618
         }
     }

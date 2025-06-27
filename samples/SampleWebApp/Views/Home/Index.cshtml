@@ -1,19 +1,42 @@
-@model HomeViewModel
+@model SampleWebApp.Models.HomeViewModel
 @{
     ViewData["Title"] = "Home";
 }
 
-<div class="container">
+<div class="container py-4">
     <div class="row mb-4">
         <div class="col">
-            <div class="card">
-                <div class="card-header">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">ToggleNet Sample Application</h5>
                 </div>
                 <div class="card-body">
-                    <p>This is a sample application demonstrating the ToggleNet feature flag system.</p>
-                    <p>Current user: <strong>@Model.UserId</strong> <a asp-action="ChangeUser" class="btn btn-sm btn-outline-secondary">Change User</a></p>
-                    <p>Go to <a href="/feature-flags">Feature Flags Dashboard</a> to configure features.</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <p class="mb-0">This is a sample application demonstrating the ToggleNet feature flag system with usage tracking.</p>
+                        </div>
+                        <a href="/feature-flags/analytics" class="btn btn-outline-primary">
+                            <i class="bi bi-graph-up me-2"></i> View Analytics
+                        </a>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-circle fs-3 me-3"></i>
+                                <div>
+                                    <p class="mb-1">Current user: <strong>@Model.UserId</strong></p>
+                                    <a asp-action="ChangeUser" class="btn btn-sm btn-outline-secondary">Change User</a>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <label class="form-check-label me-2">Feature Tracking:</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="trackingToggle" checked>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -21,53 +44,68 @@
 
     <div class="row">
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
                     <h5 class="mb-0">Feature Status</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <strong>New Dashboard:</strong>
-                        @if (Model.NewDashboardEnabled)
-                        {
-                            <span class="badge bg-success">Enabled</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Disabled</span>
-                        }
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>New Dashboard:</strong>
+                            @if (Model.NewDashboardEnabled)
+                            {
+                                <span class="badge bg-success ms-2">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary ms-2">Disabled</span>
+                            }
+                        </div>
+                        <button class="btn btn-primary btn-sm use-feature" data-feature="new-dashboard" @(!Model.NewDashboardEnabled ? "disabled" : "")>
+                            <i class="bi bi-play-circle me-1"></i> Try It
+                        </button>
                     </div>
 
-                    <div class="mb-3">
-                        <strong>Beta Features:</strong>
-                        @if (Model.BetaFeaturesEnabled)
-                        {
-                            <span class="badge bg-success">Enabled</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Disabled</span>
-                        }
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Beta Features:</strong>
+                            @if (Model.BetaFeaturesEnabled)
+                            {
+                                <span class="badge bg-success ms-2">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary ms-2">Disabled</span>
+                            }
+                        </div>
+                        <button class="btn btn-primary btn-sm use-feature" data-feature="beta-features" @(!Model.BetaFeaturesEnabled ? "disabled" : "")>
+                            <i class="bi bi-play-circle me-1"></i> Try It
+                        </button>
                     </div>
 
-                    <div class="mb-3">
-                        <strong>Dark Mode:</strong>
-                        @if (Model.DarkModeEnabled)
-                        {
-                            <span class="badge bg-success">Enabled</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary">Disabled</span>
-                        }
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Dark Mode:</strong>
+                            @if (Model.DarkModeEnabled)
+                            {
+                                <span class="badge bg-success ms-2">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary ms-2">Disabled</span>
+                            }
+                        </div>
+                        <button class="btn btn-primary btn-sm use-feature" data-feature="dark-mode" @(!Model.DarkModeEnabled ? "disabled" : "")>
+                            <i class="bi bi-play-circle me-1"></i> Try It
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
                     <h5 class="mb-0">All Feature Flags</h5>
                 </div>
                 <div class="card-body">
@@ -77,14 +115,22 @@
                             @foreach (var flag in Model.EnabledFlags)
                             {
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    @flag.Key
+                                    <div>
+                                        @flag.Key
+                                        @if (flag.Value)
+                                        {
+                                            <span class="badge bg-success rounded-pill ms-2">Enabled</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary rounded-pill ms-2">Disabled</span>
+                                        }
+                                    </div>
                                     @if (flag.Value)
                                     {
-                                        <span class="badge bg-success rounded-pill">Enabled</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary rounded-pill">Disabled</span>
+                                        <button class="btn btn-outline-primary btn-sm use-feature" data-feature="@flag.Key">
+                                            <i class="bi bi-play-circle me-1"></i> Use
+                                        </button>
                                     }
                                 </li>
                             }
@@ -122,11 +168,125 @@
             </div>
         </div>
     }
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Feature Usage Log</h5>
+                </div>
+                <div class="card-body">
+                    <div id="featureUsageLog" class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                        <div class="text-center text-muted">
+                            <i>Usage log will appear here when features are accessed</i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @if (Model.DarkModeEnabled)
 {
     <script>
         document.body.classList.add('dark-mode');
+    </script>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Handle tracking toggle
+            $('#trackingToggle').on('change', function() {
+                var isEnabled = $(this).prop('checked');
+                
+                // Log the change
+                var timestamp = new Date().toLocaleTimeString();
+                var logEntry = $('<div class="mb-2"></div>');
+                
+                $.ajax({
+                    url: '@Url.Action("ToggleTracking")',
+                    type: 'POST',
+                    data: { enabled: isEnabled },
+                    success: function(result) {
+                        if (result.success) {
+                            logEntry.html('<span class="text-info">[' + timestamp + ']</span> <strong>Tracking:</strong> ' + 
+                                (isEnabled ? 'Enabled' : 'Disabled'));
+                        } else {
+                            logEntry.html('<span class="text-danger">[' + timestamp + ']</span> <strong>Tracking:</strong> Failed to update');
+                        }
+                        
+                        // Add the log entry to the top of the log
+                        $('#featureUsageLog').prepend(logEntry);
+                        
+                        // Remove the empty message if it exists
+                        $('#featureUsageLog .text-muted').remove();
+                    },
+                    error: function() {
+                        logEntry.html('<span class="text-danger">[' + timestamp + ']</span> <strong>Tracking:</strong> Error updating setting');
+                        
+                        // Add the log entry to the top of the log
+                        $('#featureUsageLog').prepend(logEntry);
+                        
+                        // Remove the empty message if it exists
+                        $('#featureUsageLog .text-muted').remove();
+                        
+                        // Reset the toggle to match the server state
+                        $(this).prop('checked', !isEnabled);
+                    }
+                });
+            });
+            
+            // Handle feature usage button clicks
+            $('.use-feature').on('click', function () {
+                var feature = $(this).data('feature');
+                var button = $(this);
+                
+                // Disable the button while processing
+                button.prop('disabled', true);
+                
+                $.ajax({
+                    url: '@Url.Action("UseFeature")',
+                    type: 'POST',
+                    data: { featureName: feature },
+                    success: function (result) {
+                        // Log the usage
+                        var timestamp = new Date().toLocaleTimeString();
+                        var logEntry = $('<div class="mb-2"></div>');
+                        
+                        if (result.success) {
+                            logEntry.html('<span class="text-success">[' + timestamp + ']</span> <strong>' + feature + '</strong>: ' + result.message);
+                        } else {
+                            logEntry.html('<span class="text-danger">[' + timestamp + ']</span> <strong>' + feature + '</strong>: ' + result.message);
+                        }
+                        
+                        // Add the log entry to the top of the log
+                        $('#featureUsageLog').prepend(logEntry);
+                        
+                        // Remove the empty message if it exists
+                        $('#featureUsageLog .text-muted').remove();
+                        
+                        // Re-enable the button
+                        button.prop('disabled', false);
+                    },
+                    error: function () {
+                        // Log the error
+                        var timestamp = new Date().toLocaleTimeString();
+                        var logEntry = $('<div class="mb-2 text-danger"></div>');
+                        logEntry.html('<span>[' + timestamp + ']</span> <strong>' + feature + '</strong>: Error processing request');
+                        
+                        // Add the log entry to the top of the log
+                        $('#featureUsageLog').prepend(logEntry);
+                        
+                        // Remove the empty message if it exists
+                        $('#featureUsageLog .text-muted').remove();
+                        
+                        // Re-enable the button
+                        button.prop('disabled', false);
+                    }
+                });
+            });
+        });
     </script>
 }

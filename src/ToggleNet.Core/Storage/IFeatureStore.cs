@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ToggleNet.Core.Entities;
@@ -36,5 +37,48 @@ namespace ToggleNet.Core.Storage
         /// <param name="environment">The environment to filter flags by</param>
         /// <returns>Collection of feature flags</returns>
         Task<IEnumerable<FeatureFlag>> GetAllFlagsAsync(string environment);
+        
+        /// <summary>
+        /// Records a feature usage event
+        /// </summary>
+        /// <param name="usage">The feature usage event to record</param>
+        Task TrackFeatureUsageAsync(FeatureUsage usage);
+        
+        /// <summary>
+        /// Gets the count of users who have used a specific feature
+        /// </summary>
+        /// <param name="featureName">The name of the feature</param>
+        /// <param name="environment">The environment</param>
+        /// <param name="startDate">Optional start date to filter by</param>
+        /// <param name="endDate">Optional end date to filter by</param>
+        /// <returns>Number of unique users who have used the feature</returns>
+        Task<int> GetUniqueUserCountAsync(string featureName, string environment, DateTime? startDate = null, DateTime? endDate = null);
+        
+        /// <summary>
+        /// Gets the total number of usages for a specific feature
+        /// </summary>
+        /// <param name="featureName">The name of the feature</param>
+        /// <param name="environment">The environment</param>
+        /// <param name="startDate">Optional start date to filter by</param>
+        /// <param name="endDate">Optional end date to filter by</param>
+        /// <returns>Total number of times the feature was used</returns>
+        Task<int> GetTotalFeatureUsagesAsync(string featureName, string environment, DateTime? startDate = null, DateTime? endDate = null);
+        
+        /// <summary>
+        /// Gets usage data for a specific feature grouped by day
+        /// </summary>
+        /// <param name="featureName">The name of the feature</param>
+        /// <param name="environment">The environment</param>
+        /// <param name="days">Number of days to include</param>
+        /// <returns>Dictionary with dates as keys and usage counts as values</returns>
+        Task<IDictionary<DateTime, int>> GetFeatureUsageByDayAsync(string featureName, string environment, int days);
+        
+        /// <summary>
+        /// Gets recent feature usages
+        /// </summary>
+        /// <param name="environment">The environment</param>
+        /// <param name="count">Maximum number of records to return</param>
+        /// <returns>Collection of recent feature usage events</returns>
+        Task<IEnumerable<FeatureUsage>> GetRecentFeatureUsagesAsync(string environment, int count = 50);
     }
 }

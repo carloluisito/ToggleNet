@@ -20,7 +20,12 @@ namespace ToggleNet.EntityFrameworkCore
         /// <summary>
         /// Gets or sets the feature flags
         /// </summary>
-        public DbSet<FeatureFlag> FeatureFlags { get; set; } = null!;
+        public DbSet<FeatureFlag> FeatureFlags { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the feature usage tracking data
+        /// </summary>
+        public DbSet<FeatureUsage> FeatureUsages { get; set; }
 
         /// <summary>
         /// Configures the model for feature flags
@@ -69,6 +74,49 @@ namespace ToggleNet.EntityFrameworkCore
             
             entity.Property(e => e.RolloutPercentage)
                 .HasDefaultValue(0);
+                
+            // Configure FeatureUsage entity
+            var usageEntity = modelBuilder.Entity<FeatureUsage>();
+            
+            // Configure table name (schema varies by provider)
+            if (isPostgres)
+            {
+                usageEntity.ToTable("FeatureUsages", "togglenet");
+            }
+            else
+            {
+                usageEntity.ToTable("ToggleNet_FeatureUsages");
+            }
+            
+            usageEntity.HasKey(e => e.Id);
+            
+            // Create indexes for common query patterns
+            usageEntity.HasIndex(e => e.FeatureName);
+            usageEntity.HasIndex(e => e.UserId);
+            usageEntity.HasIndex(e => e.Environment);
+            usageEntity.HasIndex(e => e.Timestamp);
+            
+            // Composite indexes for improved query performance
+            usageEntity.HasIndex(e => new { e.FeatureName, e.Environment });
+            usageEntity.HasIndex(e => new { e.FeatureName, e.UserId, e.Environment });
+            
+            usageEntity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+                
+            usageEntity.Property(e => e.FeatureName)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            usageEntity.Property(e => e.UserId)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            usageEntity.Property(e => e.Environment)
+                .IsRequired()
+                .HasMaxLength(50);
+                
+            usageEntity.Property(e => e.AdditionalData)
+                .HasMaxLength(4000);
         }
     }
 }

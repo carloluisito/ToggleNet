@@ -19,7 +19,23 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Flags Dashboard" ? "active" : "")" href="~/">Feature Flags</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Analytics" ? "active" : "")" href="~/analytics">
+                            <i class="bi bi-graph-up me-1"></i> Analytics
+                        </a>
+                    </li>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewData["Title"]?.ToString() == "Manage Users" ? "active" : "")" href="~/manageusers">Manage Users</a>
+                        </li>
+                    }
+                </ul>
+                <ul class="navbar-nav">
                     @if (User.Identity.IsAuthenticated)
                     {
                         <li class="nav-item dropdown">
