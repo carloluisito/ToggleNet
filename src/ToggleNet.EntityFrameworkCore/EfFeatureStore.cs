@@ -37,6 +37,8 @@ namespace ToggleNet.EntityFrameworkCore
 
             return await _context.FeatureFlags
                 .AsNoTracking()
+                .Include(f => f.TargetingRuleGroups)
+                    .ThenInclude(g => g.Rules)
                 .FirstOrDefaultAsync(f => f.Name == featureName);
         }
 
@@ -117,6 +119,8 @@ namespace ToggleNet.EntityFrameworkCore
 
             return await _context.FeatureFlags
                 .AsNoTracking()
+                .Include(f => f.TargetingRuleGroups)
+                    .ThenInclude(g => g.Rules)
                 .Where(f => f.Environment == environment)
                 .ToListAsync();
         }
@@ -264,6 +268,181 @@ namespace ToggleNet.EntityFrameworkCore
                 .OrderByDescending(u => u.Timestamp)
                 .Take(count)
                 .ToListAsync();
+        }
+        
+        /// <summary>
+        /// Saves or updates a targeting rule group
+        /// </summary>
+        /// <param name="ruleGroup">The targeting rule group to save</param>
+        public async Task SaveTargetingRuleGroupAsync(TargetingRuleGroup ruleGroup)
+        {
+            if (ruleGroup == null)
+                throw new ArgumentNullException(nameof(ruleGroup));
+                
+            var existingRuleGroup = await _context.TargetingRuleGroups
+                .Include(rg => rg.Rules)
+                .FirstOrDefaultAsync(rg => rg.Id == ruleGroup.Id);
+                
+            if (existingRuleGroup == null)
+            {
+                _context.TargetingRuleGroups.Add(ruleGroup);
+            }
+            else
+            {
+                _context.Entry(existingRuleGroup).CurrentValues.SetValues(ruleGroup);
+                
+                // Update rules
+                foreach (var rule in ruleGroup.Rules)
+                {
+                    var existingRule = existingRuleGroup.Rules.FirstOrDefault(r => r.Id == rule.Id);
+                    if (existingRule == null)
+                    {
+                        existingRuleGroup.Rules.Add(rule);
+                    }
+                    else
+                    {
+                        _context.Entry(existingRule).CurrentValues.SetValues(rule);
+                    }
+                }
+                
+                // Remove deleted rules
+                var rulesToRemove = existingRuleGroup.Rules
+                    .Where(r => !ruleGroup.Rules.Any(nr => nr.Id == r.Id))
+                    .ToList();
+                    
+                foreach (var rule in rulesToRemove)
+                {
+                    existingRuleGroup.Rules.Remove(rule);
+                }
+            }
+            
+            await _context.SaveChangesAsync();
+        }
+        
+        /// <summary>
+        /// Gets all targeting rule groups for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        /// <returns>Collection of targeting rule groups</returns>
+        public async Task<IEnumerable<TargetingRuleGroup>> GetTargetingRuleGroupsAsync(Guid featureFlagId)
+        {
+            return await _context.TargetingRuleGroups
+                .AsNoTracking()
+                .Include(rg => rg.Rules)
+                .Where(rg => rg.FeatureFlagId == featureFlagId)
+                .OrderBy(rg => rg.Priority)
+                .ToListAsync();
+        }
+        
+        /// <summary>
+        /// Deletes a targeting rule group
+        /// </summary>
+        /// <param name="ruleGroupId">The ID of the rule group to delete</param>
+        public async Task DeleteTargetingRuleGroupAsync(Guid ruleGroupId)
+        {
+            var ruleGroup = await _context.TargetingRuleGroups
+                .Include(rg => rg.Rules)
+                .FirstOrDefaultAsync(rg => rg.Id == ruleGroupId);
+                
+            if (ruleGroup != null)
+            {
+                _context.TargetingRuleGroups.Remove(ruleGroup);
+                await _context.SaveChangesAsync();
+            }
+        }
+        
+        /// <summary>
+        /// Saves or updates a targeting rule
+        /// </summary>
+        /// <param name="rule">The targeting rule to save</param>
+        public async Task SaveTargetingRuleAsync(TargetingRule rule)
+        {
+            if (rule == null)
+                throw new ArgumentNullException(nameof(rule));
+                
+            var existingRule = await _context.TargetingRules
+                .FirstOrDefaultAsync(r => r.Id == rule.Id);
+                
+            if (existingRule == null)
+            {
+                _context.TargetingRules.Add(rule);
+            }
+            else
+            {
+                _context.Entry(existingRule).CurrentValues.SetValues(rule);
+            }
+            
+            await _context.SaveChangesAsync();
+        }
+        
+        /// <summary>
+        /// Deletes a targeting rule
+        /// </summary>
+        /// <param name="ruleId">The ID of the rule to delete</param>
+        public async Task DeleteTargetingRuleAsync(Guid ruleId)
+        {
+            var rule = await _context.TargetingRules
+                .FirstOrDefaultAsync(r => r.Id == ruleId);
+                
+            if (rule != null)
+            {
+                _context.TargetingRules.Remove(rule);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        /// <summary>
+        /// Creates a new targeting rule group
+        /// </summary>
+        /// <param name="ruleGroup">The targeting rule group to create</param>
+        public async Task CreateTargetingRuleGroupAsync(TargetingRuleGroup ruleGroup)
+        {
+            if (ruleGroup == null)
+                throw new ArgumentNullException(nameof(ruleGroup));
+
+            await _context.TargetingRuleGroups.AddAsync(ruleGroup);
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Clears all targeting rule groups for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        public async Task ClearTargetingRuleGroupsAsync(Guid featureFlagId)
+        {
+            var ruleGroups = await _context.TargetingRuleGroups
+                .Include(rg => rg.Rules)
+                .Where(rg => rg.FeatureFlagId == featureFlagId)
+                .ToListAsync();
+
+            foreach (var ruleGroup in ruleGroups)
+            {
+                if (ruleGroup.Rules != null)
+                {
+                    _context.TargetingRules.RemoveRange(ruleGroup.Rules);
+                }
+                _context.TargetingRuleGroups.Remove(ruleGroup);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Updates the UseTargetingRules property for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        /// <param name="useTargetingRules">Whether to use targeting rules</param>
+        public async Task UpdateFlagTargetingAsync(Guid featureFlagId, bool useTargetingRules)
+        {
+            var flag = await _context.FeatureFlags
+                .FirstOrDefaultAsync(f => f.Id == featureFlagId);
+
+            if (flag != null)
+            {
+                flag.UseTargetingRules = useTargetingRules;
+                flag.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

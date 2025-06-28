@@ -23,4 +23,8 @@
     <ProjectReference Include="..\ToggleNet.Core\ToggleNet.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\**\*" />
+  </ItemGroup>
+
 </Project>

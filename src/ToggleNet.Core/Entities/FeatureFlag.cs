@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ToggleNet.Core.Entities
 {
@@ -29,6 +30,7 @@ namespace ToggleNet.Core.Entities
         
         /// <summary>
         /// Percentage of users who should see this feature (0-100)
+        /// Used as fallback when no targeting rules match
         /// </summary>
         public int RolloutPercentage { get; set; }
         
@@ -41,5 +43,15 @@ namespace ToggleNet.Core.Entities
         /// When the flag was last updated
         /// </summary>
         public DateTime UpdatedAt { get; set; }
+        
+        /// <summary>
+        /// Targeting rule groups for this feature flag
+        /// </summary>
+        public List<TargetingRuleGroup> TargetingRuleGroups { get; set; } = new();
+        
+        /// <summary>
+        /// Whether to use targeting rules or fall back to percentage rollout
+        /// </summary>
+        public bool UseTargetingRules { get; set; } = false;
     }
 }

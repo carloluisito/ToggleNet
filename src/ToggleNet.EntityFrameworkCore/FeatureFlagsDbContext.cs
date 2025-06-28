@@ -20,12 +20,22 @@ namespace ToggleNet.EntityFrameworkCore
         /// <summary>
         /// Gets or sets the feature flags
         /// </summary>
-        public DbSet<FeatureFlag> FeatureFlags { get; set; }
+        public DbSet<FeatureFlag> FeatureFlags { get; set; } = null!;
         
         /// <summary>
         /// Gets or sets the feature usage tracking data
         /// </summary>
-        public DbSet<FeatureUsage> FeatureUsages { get; set; }
+        public DbSet<FeatureUsage> FeatureUsages { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the targeting rule groups
+        /// </summary>
+        public DbSet<TargetingRuleGroup> TargetingRuleGroups { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the targeting rules
+        /// </summary>
+        public DbSet<TargetingRule> TargetingRules { get; set; } = null!;
 
         /// <summary>
         /// Configures the model for feature flags
@@ -117,6 +127,88 @@ namespace ToggleNet.EntityFrameworkCore
                 
             usageEntity.Property(e => e.AdditionalData)
                 .HasMaxLength(4000);
+            
+            // Configure TargetingRuleGroup entity
+            var groupEntity = modelBuilder.Entity<TargetingRuleGroup>();
+            
+            // Configure table name (schema varies by provider)
+            if (isPostgres)
+            {
+                groupEntity.ToTable("TargetingRuleGroups", "togglenet");
+            }
+            else
+            {
+                groupEntity.ToTable("ToggleNet_TargetingRuleGroups");
+            }
+            
+            groupEntity.HasKey(e => e.Id);
+            
+            groupEntity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+                
+            groupEntity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            groupEntity.Property(e => e.FeatureFlagId)
+                .IsRequired();
+                
+            groupEntity.Property(e => e.LogicalOperator)
+                .IsRequired();
+                
+            groupEntity.Property(e => e.Priority)
+                .HasDefaultValue(0);
+                
+            groupEntity.Property(e => e.RolloutPercentage)
+                .HasDefaultValue(100);
+            
+            // Configure TargetingRule entity
+            var ruleEntity = modelBuilder.Entity<TargetingRule>();
+            
+            // Configure table name (schema varies by provider)
+            if (isPostgres)
+            {
+                ruleEntity.ToTable("TargetingRules", "togglenet");
+            }
+            else
+            {
+                ruleEntity.ToTable("ToggleNet_TargetingRules");
+            }
+            
+            ruleEntity.HasKey(e => e.Id);
+            
+            ruleEntity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+                
+            ruleEntity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            ruleEntity.Property(e => e.Attribute)
+                .IsRequired()
+                .HasMaxLength(100);
+                
+            ruleEntity.Property(e => e.Operator)
+                .IsRequired();
+                
+            ruleEntity.Property(e => e.Value)
+                .IsRequired()
+                .HasMaxLength(2000);
+                
+            ruleEntity.Property(e => e.Priority)
+                .HasDefaultValue(0);
+                
+            // Configure relationships
+            groupEntity.HasMany(g => g.Rules)
+                .WithOne()
+                .HasForeignKey("TargetingRuleGroupId")
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            modelBuilder.Entity<FeatureFlag>()
+                .HasMany(f => f.TargetingRuleGroups)
+                .WithOne()
+                .HasForeignKey(g => g.FeatureFlagId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -12,6 +12,9 @@
             <p class="text-muted">Managing features for <span class="badge bg-primary">@Model.Environment</span> environment</p>
         </div>
         <div>
+            <a href="@Url.Page("/TargetingRules")" class="btn btn-outline-primary me-2">
+                <i class="bi bi-target me-2"></i>Targeting Rules
+            </a>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFlagModal">
                 <i class="bi bi-plus-circle me-2"></i>Add New Flag
             </button>
@@ -37,6 +40,7 @@
                                     <th>Description</th>
                                     <th class="text-center">Enabled</th>
                                     <th>Rollout %</th>
+                                    <th class="text-center">Targeting Rules</th>
                                     <th>Updated</th>
                                     <th class="text-end pe-4">Actions</th>
                                 </tr>
@@ -45,7 +49,7 @@
                                 @if (!Model.Flags.Any())
                                 {
                                     <tr>
-                                        <td colspan="6" class="text-center py-5">
+                                        <td colspan="7" class="text-center py-5">
                                             <div class="py-4 text-muted">
                                                 <i class="bi bi-flag fs-2 d-block mb-3"></i>
                                                 <h5>No feature flags found</h5>
@@ -81,6 +85,20 @@
                                                        @(!flag.IsEnabled ? "disabled" : "")>
                                                     <span class="rollout-value badge bg-secondary">@flag.RolloutPercentage%</span>
                                                 </div>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (flag.TargetingRuleGroups?.Any() == true)
+                                                {
+                                                    <a href="@Url.Page("/TargetingRules", new { flagId = flag.Id })" class="btn btn-sm btn-outline-success" title="@flag.TargetingRuleGroups.Count group(s), @flag.TargetingRuleGroups.Sum(g => g.Rules?.Count ?? 0) rule(s)">
+                                                        <i class="bi bi-target me-1"></i>@flag.TargetingRuleGroups.Count
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <a href="@Url.Page("/TargetingRules", new { flagId = flag.Id })" class="text-muted text-decoration-none" title="No targeting rules configured">
+                                                        <i class="bi bi-dash-circle"></i>
+                                                    </a>
+                                                }
                                             </td>
                                             <td>
                                                 <span class="text-muted small">
