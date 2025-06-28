@@ -252,7 +252,7 @@ namespace ToggleNet.Core.Tests
         }
 
         [Fact]
-        public async Task EvaluateAsync_FallsBackToPercentage_WhenNoRulesMatch()
+        public async Task EvaluateAsync_ReturnsDisabled_WhenNoRulesMatch()
         {
             // Arrange
             var featureFlag = new FeatureFlag
@@ -261,7 +261,7 @@ namespace ToggleNet.Core.Tests
                 IsEnabled = true,
                 Environment = "Test",
                 UseTargetingRules = true,
-                RolloutPercentage = 100, // Should fall back to this
+                RolloutPercentage = 100, // High percentage but should be ignored when targeting rules are enabled
                 TargetingRuleGroups = new List<TargetingRuleGroup>
                 {
                     new TargetingRuleGroup
@@ -294,7 +294,34 @@ namespace ToggleNet.Core.Tests
             // Act
             var result = await _engine.EvaluateAsync(featureFlag, userContext);
 
-            // Assert - This should be true because fallback percentage is 100%
+            // Assert - Should be false because when targeting rules are enabled but no rules match, feature is disabled
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task EvaluateAsync_FallsBackToPercentage_WhenTargetingRulesDisabled()
+        {
+            // Arrange
+            var featureFlag = new FeatureFlag
+            {
+                Name = "test-feature",
+                IsEnabled = true,
+                Environment = "Test",
+                UseTargetingRules = false, // Targeting rules disabled
+                RolloutPercentage = 100, // Should use this percentage
+                TargetingRuleGroups = new List<TargetingRuleGroup>() // Empty or irrelevant
+            };
+
+            var userContext = new UserContext
+            {
+                UserId = "user1",
+                Attributes = new Dictionary<string, object> { ["country"] = "CA" }
+            };
+
+            // Act
+            var result = await _engine.EvaluateAsync(featureFlag, userContext);
+
+            // Assert - Should be true because targeting rules are disabled and fallback percentage is 100%
             Assert.True(result);
         }
 
