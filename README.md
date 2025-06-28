@@ -231,6 +231,55 @@ The analytics dashboard at `/feature-flags/Analytics` provides insights includin
 * Individual feature usage events with user IDs and timestamps
 * Ability to enable/disable usage tracking directly from the dashboard
 
+### A/B Testing Support
+
+ToggleNet provides powerful A/B testing capabilities through its targeting rules engine and percentage rollouts:
+
+```csharp
+public class CheckoutController : Controller
+{
+    private readonly FeatureFlagManager _featureFlagManager;
+
+    public async Task<IActionResult> Index()
+    {
+        var userContext = new UserContext
+        {
+            UserId = User.Identity.Name,
+            Attributes = new Dictionary<string, object>
+            {
+                ["country"] = GetUserCountry(),
+                ["userType"] = GetUserType(),
+                ["cartValue"] = GetCartTotal()
+            }
+        };
+
+        // A/B test: 50% of premium users see new checkout flow
+        bool useNewCheckout = await _featureFlagManager.IsEnabledAsync("new-checkout-flow", userContext);
+        
+        if (useNewCheckout)
+        {
+            // Track conversion for variant A
+            await _featureFlagManager.TrackFeatureUsageAsync("new-checkout-flow", User.Identity.Name, "checkout-started");
+            return View("NewCheckout");
+        }
+        else
+        {
+            // Track conversion for variant B
+            await _featureFlagManager.TrackFeatureUsageAsync("old-checkout-flow", User.Identity.Name, "checkout-started");
+            return View("OriginalCheckout");
+        }
+    }
+}
+```
+
+**A/B Testing Features:**
+- **Percentage-based rollouts** for random user distribution
+- **Attribute-based targeting** for specific user segments
+- **Multiple variant support** using multiple feature flags
+- **Consistent user experience** - same user always sees same variant
+- **Built-in analytics** to measure conversion rates and user engagement
+- **Gradual rollouts** - start small and increase percentage over time
+
 ## Custom Feature Store
 
 You can implement your own feature store by implementing the `IFeatureStore` interface:
@@ -256,11 +305,13 @@ app.UseToggleNetDashboard("/my-feature-flags");
 The dashboard provides multiple pages:
 * **Dashboard Home**: Manage and configure feature flags
 * **Targeting Rules**: Advanced configuration interface for targeting rules
-  * Visual rule builder interface
-  * Real-time rule testing with sample user data
+  * Visual rule builder interface with drag-and-drop functionality
+  * Real-time rule testing with sample user data and detailed evaluation results
   * Support for complex rule groups with AND/OR logic
   * Priority-based rule ordering with numeric values
   * Per-rule group rollout percentages
+  * Contextual notifications for save operations and errors
+  * Test results history with chronological display
 * **Analytics**: View usage statistics, trends, and individual usage events
   * Filter by time period (7, 30, or 90 days)
   * View unique user counts and total usage metrics
@@ -345,6 +396,20 @@ The new Targeting Rules dashboard (`/feature-flags/targeting-rules`) provides a 
 - **Rule Priorities**: Control evaluation order with numeric priority values
 - **Flexible Rollouts**: Set different rollout percentages for each rule group
 - **Common Attributes**: Pre-populated suggestions for common user attributes like country, plan, device type, etc.
+- **Real-time Notifications**: Immediate feedback for save operations and test results
+- **Detailed Test Results**: Comprehensive evaluation details showing which rules matched and why
+
+### Targeting Rules Logic:
+
+The targeting rules engine follows a strict evaluation logic:
+
+1. **When targeting rules are disabled**: Uses the fallback rollout percentage
+2. **When targeting rules are enabled**:
+   - Evaluates rule groups in priority order (lowest priority first)
+   - **If a rule group matches**: Uses that group's rollout percentage
+   - **If NO rule groups match**: Feature is **disabled** (regardless of fallback percentage)
+
+This ensures that targeting rules are strictly enforced - users must meet the defined criteria to receive features.
 
 Example targeting scenarios you can configure through the dashboard:
 - **Premium Features**: Target users with `plan = "enterprise"` AND `country IN ["US", "CA"]`
