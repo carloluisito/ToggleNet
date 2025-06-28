@@ -205,7 +205,7 @@ function updatePriorityDisplay(input) {
 // Save targeting rules
 async function saveTargetingRules() {
     if (!currentFeatureFlagId) {
-        showAlert('Please select a feature flag first', 'warning');
+        showActionAlert('Please select a feature flag first', 'warning');
         return;
     }
     
@@ -223,14 +223,14 @@ async function saveTargetingRules() {
         
         if (response.ok) {
             const result = await response.json();
-            showAlert(result.message || 'Targeting rules saved successfully', 'success');
+            showActionAlert(result.message || 'Targeting rules saved successfully', 'success');
         } else {
             const error = await response.text();
-            showAlert('Error saving targeting rules: ' + error, 'danger');
+            showActionAlert('Error saving targeting rules: ' + error, 'danger');
         }
     } catch (error) {
         console.error('Error saving targeting rules:', error);
-        showAlert('Error saving targeting rules', 'danger');
+        showActionAlert('Error saving targeting rules', 'danger');
     }
 }
 
@@ -305,7 +305,7 @@ async function executeTest() {
     try {
         testAttributes = JSON.parse(testAttributesText);
     } catch (error) {
-        showAlert('Invalid JSON in test attributes', 'danger');
+        showModalAlert('Invalid JSON in test attributes', 'danger');
         return;
     }
     
@@ -328,15 +328,16 @@ async function executeTest() {
             displayTestResult(result);
         } else {
             const error = await response.text();
-            showAlert('Error testing targeting rules: ' + error, 'danger');
+            showModalAlert('Error testing targeting rules: ' + error, 'danger');
         }
     } catch (error) {
         console.error('Error testing targeting rules:', error);
-        showAlert('Error testing targeting rules', 'danger');
+        showModalAlert('Error testing targeting rules: ' + error.message, 'danger');
     }
 }
 
 function displayTestResult(result) {
+    // Display in modal
     const resultDiv = document.getElementById('testResult');
     const alertClass = result.result ? 'alert-success' : 'alert-warning';
     const icon = result.result ? 'check-circle' : 'x-circle';
@@ -354,6 +355,150 @@ function displayTestResult(result) {
     `;
     
     resultDiv.classList.remove('d-none');
+    
+    // Also display in main page test results section
+    displayTestResultOnMainPage(result);
+}
+
+function displayTestResultOnMainPage(result) {
+    const testResultsSection = document.getElementById('testResultsSection');
+    const testResultsContent = document.getElementById('testResultsContent');
+    
+    const resultClass = result.result ? 'enabled' : 'disabled';
+    const icon = result.result ? 'check-circle-fill' : 'x-circle-fill';
+    const statusText = result.result ? 'ENABLED' : 'DISABLED';
+    const statusColor = result.result ? 'text-success' : 'text-danger';
+    
+    const timestamp = new Date().toLocaleString();
+    
+    const resultHtml = `
+        <div class="test-result-item ${resultClass}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-${icon} me-2 ${statusColor}"></i>
+                    <strong>Feature Flag: ${statusText}</strong>
+                </div>
+                <small class="text-muted">${timestamp}</small>
+            </div>
+            
+            <div class="test-user-input">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>User ID:</strong> ${result.userContext.userId}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Result:</strong> <span class="${statusColor}">${result.message}</span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <strong>User Attributes:</strong>
+                    <div class="rule-evaluation">
+                        ${JSON.stringify(result.userContext.attributes, null, 2)}
+                    </div>
+                </div>
+            </div>
+            
+            ${result.evaluationDetails ? `
+                <div class="mt-2">
+                    <strong>Evaluation Details:</strong>
+                    <div class="rule-evaluation">
+                        ${result.evaluationDetails}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    // Prepend new result (show latest first)
+    testResultsContent.insertAdjacentHTML('afterbegin', resultHtml);
+    
+    // Show the test results section
+    testResultsSection.classList.remove('d-none');
+    
+    // Limit to last 10 results to avoid clutter
+    const resultItems = testResultsContent.querySelectorAll('.test-result-item');
+    if (resultItems.length > 10) {
+        for (let i = 10; i < resultItems.length; i++) {
+            resultItems[i].remove();
+        }
+    }
+}
+
+// Show alert within the modal
+function showModalAlert(message, type = 'info') {
+    const modalBody = document.querySelector('#testModal .modal-body');
+    if (!modalBody) {
+        // Fallback to regular alert if modal is not available
+        showAlert(message, type);
+        return;
+    }
+    
+    // Remove any existing modal alerts
+    const existingAlert = modalBody.querySelector('.modal-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show modal-alert" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert alert at the top of modal body
+    modalBody.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = modalBody.querySelector('.modal-alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Show alert in the action section near save/test buttons
+function showActionAlert(message, type = 'info') {
+    const actionNotifications = document.getElementById('actionNotifications');
+    if (!actionNotifications) {
+        // Fallback to regular alert if action notifications area is not available
+        showAlert(message, type);
+        return;
+    }
+    
+    // Remove any existing action alerts
+    const existingAlert = actionNotifications.querySelector('.action-alert');
+    if (existingAlert) {
+        existingAlert.remove();
+    }
+    
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show action-alert" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Insert alert in the action notifications area
+    actionNotifications.innerHTML = alertHtml;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = actionNotifications.querySelector('.action-alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Clear test results
+function clearTestResults() {
+    const testResultsSection = document.getElementById('testResultsSection');
+    const testResultsContent = document.getElementById('testResultsContent');
+    
+    testResultsContent.innerHTML = '';
+    testResultsSection.classList.add('d-none');
 }
 
 // Collect targeting rules data from form

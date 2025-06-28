@@ -47,8 +47,9 @@ namespace ToggleNet.Core.Targeting
                 }
             }
             
-            // Fall back to default rollout percentage (current behavior)
-            return EvaluatePercentageRollout(userContext.UserId, featureFlag.Name, featureFlag.RolloutPercentage);
+            // If targeting rules are enabled but no rule groups match, feature should be disabled
+            // The fallback percentage is only used when targeting rules are disabled
+            return false;
         }
         
         /// <summary>
