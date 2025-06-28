@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.StaticFiles;
 using System;
 using ToggleNet.Dashboard.Auth;
 
@@ -60,8 +61,6 @@ namespace ToggleNet.Dashboard
         {
             if (app == null)
                 throw new ArgumentNullException(nameof(app));
-                
-            app.UseStaticFiles();
 
             // Create auth options if needed
             var authOptions = new DashboardAuthOptions { BasePath = pathMatch };
@@ -69,6 +68,15 @@ namespace ToggleNet.Dashboard
             // Map the dashboard to the specified path
             app.Map(pathMatch, dashboardApp =>
             {
+                // Serve static files from the dashboard's wwwroot within the dashboard path
+                dashboardApp.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new Microsoft.Extensions.FileProviders.EmbeddedFileProvider(
+                        typeof(DashboardExtensions).Assembly,
+                        "ToggleNet.Dashboard.wwwroot"),
+                    RequestPath = ""
+                });
+                
                 dashboardApp.UseRouting();
                 
                 // Add authentication middleware if required

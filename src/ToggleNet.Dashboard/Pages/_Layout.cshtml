@@ -11,7 +11,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="~/">
+            <a class="navbar-brand d-flex align-items-center" href="@Url.Page("/Index")">
                 <i class="bi bi-toggles me-2 fs-4"></i>
                 <span class="fw-bold">ToggleNet</span>
             </a>
@@ -21,17 +21,22 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Flags Dashboard" ? "active" : "")" href="~/">Feature Flags</a>
+                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Flags Dashboard" ? "active" : "")" href="@Url.Page("/Index")">Feature Flags</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Analytics" ? "active" : "")" href="~/analytics">
+                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Targeting Rules" ? "active" : "")" href="@Url.Page("/TargetingRules")">
+                            <i class="bi bi-target me-1"></i> Targeting Rules
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(ViewData["Title"]?.ToString() == "Feature Analytics" ? "active" : "")" href="@Url.Page("/Analytics")">
                             <i class="bi bi-graph-up me-1"></i> Analytics
                         </a>
                     </li>
                     @if (User.IsInRole("Admin"))
                     {
                         <li class="nav-item">
-                            <a class="nav-link @(ViewData["Title"]?.ToString() == "Manage Users" ? "active" : "")" href="~/manageusers">Manage Users</a>
+                            <a class="nav-link @(ViewData["Title"]?.ToString() == "Manage Users" ? "active" : "")" href="@Url.Page("/ManageUsers")">Manage Users</a>
                         </li>
                     }
                 </ul>
@@ -43,7 +48,7 @@
                                 @User.Identity.Name
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="~/logout">Logout</a></li>
+                                <li><a class="dropdown-item" href="@Url.Page("/Logout")">Logout</a></li>
                             </ul>
                         </li>
                     }

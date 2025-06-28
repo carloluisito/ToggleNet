@@ -1,0 +1,280 @@
+@page "/targeting-rules"
+@model ToggleNet.Dashboard.Pages.TargetingRulesModel
+@{
+    ViewData["Title"] = "Targeting Rules";
+    Layout = "_Layout";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Targeting Rules</h1>
+            <p class="text-muted">Advanced targeting configuration for feature flags</p>
+        </div>
+        <div>
+            <a href="@Url.Page("/Index")" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-2"></i>Back to Flags
+            </a>
+        </div>
+    </div>
+
+    <form id="antiforgeryForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <!-- Feature Flag Selection -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">Select Feature Flag</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="flagSelect" class="form-label">Feature Flag</label>
+                        <select id="flagSelect" class="form-select" onchange="loadTargetingRules()">
+                            <option value="">Select a feature flag...</option>
+                            @foreach (var flag in Model.Flags)
+                            {
+                                <option value="@flag.Id" data-name="@flag.Name">@flag.Name - @flag.Description</option>
+                            }
+                        </select>
+                    </div>
+                    
+                    <div id="flagInfo" class="d-none">
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="useTargetingRules" onchange="toggleTargetingRules()">
+                                    <label class="form-check-label" for="useTargetingRules">
+                                        Use Targeting Rules
+                                    </label>
+                                </div>
+                                <small class="text-muted">Enable advanced targeting for this flag</small>
+                            </div>
+                            <div class="col-sm-6">
+                                <label for="fallbackPercentage" class="form-label">Fallback Rollout %</label>
+                                <input type="number" class="form-control" id="fallbackPercentage" min="0" max="100" value="0">
+                                <small class="text-muted">Used when no targeting rules match</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targeting Rules Configuration -->
+    <div id="targetingRulesSection" class="d-none">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Targeting Rule Groups</h5>
+                <button type="button" class="btn btn-success btn-sm" onclick="addRuleGroup()">
+                    <i class="bi bi-plus-circle me-2"></i>Add Rule Group
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="ruleGroupsContainer">
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-target fs-2 d-block mb-3"></i>
+                        <p>No targeting rule groups configured.</p>
+                        <p class="small">Add a rule group to start targeting specific users based on their attributes.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rule Group Template -->
+<template id="ruleGroupTemplate">
+    <div class="rule-group border rounded p-4 mb-4" data-group-id="">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center">
+                <h6 class="mb-0 me-3">Rule Group</h6>
+                <span class="badge bg-secondary">Priority: <span class="priority-display">1</span></span>
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="addRule(this)">
+                    <i class="bi bi-plus me-1"></i>Add Rule
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRuleGroup(this)">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label class="form-label">Group Name</label>
+                <input type="text" class="form-control group-name" placeholder="e.g., Premium Users">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Logic</label>
+                <select class="form-select group-logic">
+                    <option value="And">AND</option>
+                    <option value="Or">OR</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Priority</label>
+                <input type="number" class="form-control group-priority" min="1" value="1" onchange="updatePriorityDisplay(this)">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Rollout %</label>
+                <input type="number" class="form-control group-rollout" min="0" max="100" value="100">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input group-enabled" type="checkbox" checked>
+                    <label class="form-check-label">Enabled</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="rules-container">
+            <!-- Rules will be added here -->
+        </div>
+    </div>
+</template>
+
+<!-- Rule Template -->
+<template id="ruleTemplate">
+    <div class="rule border-start border-3 border-info ps-3 mb-3" data-rule-id="">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Rule</h6>
+            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeRule(this)">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Rule Name</label>
+                <input type="text" class="form-control rule-name" placeholder="e.g., Country Check">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Attribute</label>
+                <input type="text" class="form-control rule-attribute" placeholder="e.g., country" list="commonAttributes">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Operator</label>
+                <select class="form-select rule-operator">
+                    <option value="Equals">Equals</option>
+                    <option value="EqualsIgnoreCase">Equals (ignore case)</option>
+                    <option value="NotEquals">Not Equals</option>
+                    <option value="In">In List</option>
+                    <option value="NotIn">Not In List</option>
+                    <option value="Contains">Contains</option>
+                    <option value="NotContains">Not Contains</option>
+                    <option value="StartsWith">Starts With</option>
+                    <option value="EndsWith">Ends With</option>
+                    <option value="Regex">Regex Match</option>
+                    <option value="GreaterThan">Greater Than</option>
+                    <option value="GreaterThanOrEqual">Greater Than or Equal</option>
+                    <option value="LessThan">Less Than</option>
+                    <option value="LessThanOrEqual">Less Than or Equal</option>
+                    <option value="Before">Before (Date)</option>
+                    <option value="After">After (Date)</option>
+                    <option value="VersionGreaterThan">Version Greater Than</option>
+                    <option value="VersionLessThan">Version Less Than</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Value</label>
+                <input type="text" class="form-control rule-value" placeholder="e.g., US or [&quot;US&quot;,&quot;CA&quot;]">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Priority</label>
+                <input type="number" class="form-control rule-priority" min="1" value="1">
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <div class="form-check form-switch">
+                <input class="form-check-input rule-enabled" type="checkbox" checked>
+                <label class="form-check-label">Enabled</label>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Common Attributes Datalist -->
+<datalist id="commonAttributes">
+    <option value="country"></option>
+    <option value="region"></option>
+    <option value="city"></option>
+    <option value="userType"></option>
+    <option value="plan"></option>
+    <option value="deviceType"></option>
+    <option value="osVersion"></option>
+    <option value="appVersion"></option>
+    <option value="age"></option>
+    <option value="registrationDate"></option>
+    <option value="companySize"></option>
+    <option value="industry"></option>
+    <option value="email"></option>
+    <option value="betaTester"></option>
+    <option value="language"></option>
+    <option value="timezone"></option>
+</datalist>
+
+<!-- Save/Test Section -->
+<div id="actionSection" class="d-none">
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Actions</h6>
+                    <small class="text-muted">Save your targeting rules or test them with sample user data</small>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-info" onclick="testTargetingRules()">
+                        <i class="bi bi-play-circle me-2"></i>Test Rules
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveTargetingRules()">
+                        <i class="bi bi-save me-2"></i>Save Configuration
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rule-group {
+    background-color: #f8f9fa;
+}
+
+.rule {
+    background-color: white;
+    border-radius: 0.375rem;
+    padding: 1rem;
+}
+
+.priority-display {
+    font-weight: bold;
+}
+
+.bi {
+    font-size: 1.1em;
+}
+</style>
+
+<script src="~/js/targeting-rules.js"></script>
+
+@if (!string.IsNullOrEmpty(Model.SelectedFlagId))
+{
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Pre-select the flag if flagId is provided in query parameter
+            const flagSelect = document.getElementById('flagSelect');
+            if (flagSelect) {
+                flagSelect.value = '@Model.SelectedFlagId';
+                // Trigger the load function
+                loadTargetingRules();
+            }
+        });
+    </script>
+}

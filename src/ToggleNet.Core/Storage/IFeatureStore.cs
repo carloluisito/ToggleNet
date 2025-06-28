@@ -80,5 +80,55 @@ namespace ToggleNet.Core.Storage
         /// <param name="count">Maximum number of records to return</param>
         /// <returns>Collection of recent feature usage events</returns>
         Task<IEnumerable<FeatureUsage>> GetRecentFeatureUsagesAsync(string environment, int count = 50);
+        
+        /// <summary>
+        /// Saves or updates a targeting rule group
+        /// </summary>
+        /// <param name="ruleGroup">The targeting rule group to save</param>
+        Task SaveTargetingRuleGroupAsync(TargetingRuleGroup ruleGroup);
+        
+        /// <summary>
+        /// Gets all targeting rule groups for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        /// <returns>Collection of targeting rule groups</returns>
+        Task<IEnumerable<TargetingRuleGroup>> GetTargetingRuleGroupsAsync(Guid featureFlagId);
+        
+        /// <summary>
+        /// Deletes a targeting rule group
+        /// </summary>
+        /// <param name="ruleGroupId">The ID of the rule group to delete</param>
+        Task DeleteTargetingRuleGroupAsync(Guid ruleGroupId);
+        
+        /// <summary>
+        /// Saves or updates a targeting rule
+        /// </summary>
+        /// <param name="rule">The targeting rule to save</param>
+        Task SaveTargetingRuleAsync(TargetingRule rule);
+        
+        /// <summary>
+        /// Deletes a targeting rule
+        /// </summary>
+        /// <param name="ruleId">The ID of the rule to delete</param>
+        Task DeleteTargetingRuleAsync(Guid ruleId);
+
+        /// <summary>
+        /// Creates a new targeting rule group
+        /// </summary>
+        /// <param name="ruleGroup">The targeting rule group to create</param>
+        Task CreateTargetingRuleGroupAsync(TargetingRuleGroup ruleGroup);
+        
+        /// <summary>
+        /// Clears all targeting rule groups for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        Task ClearTargetingRuleGroupsAsync(Guid featureFlagId);
+        
+        /// <summary>
+        /// Updates the UseTargetingRules property for a feature flag
+        /// </summary>
+        /// <param name="featureFlagId">The feature flag ID</param>
+        /// <param name="useTargetingRules">Whether to use targeting rules</param>
+        Task UpdateFlagTargetingAsync(Guid featureFlagId, bool useTargetingRules);
     }
 }

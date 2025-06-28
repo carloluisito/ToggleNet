@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using ToggleNet.Core.Entities;
 using ToggleNet.Core.Storage;
+using ToggleNet.Core.Targeting;
 
 namespace ToggleNet.Core
 {
@@ -12,6 +14,7 @@ namespace ToggleNet.Core
     public class FeatureFlagManager
     {
         private readonly IFeatureStore _featureStore;
+        private readonly ITargetingRulesEngine _targetingRulesEngine;
         private readonly string _environment;
         private bool _enableTracking = true;
 
@@ -22,8 +25,21 @@ namespace ToggleNet.Core
         /// <param name="environment">The current environment</param>
         /// <param name="licenseKey">Optional license key for premium features</param>
         public FeatureFlagManager(IFeatureStore featureStore, string environment, string? licenseKey = null)
+            : this(featureStore, new TargetingRulesEngine(), environment, licenseKey)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the FeatureFlagManager with custom targeting rules engine
+        /// </summary>
+        /// <param name="featureStore">The feature store implementation</param>
+        /// <param name="targetingRulesEngine">The targeting rules engine implementation</param>
+        /// <param name="environment">The current environment</param>
+        /// <param name="licenseKey">Optional license key for premium features</param>
+        public FeatureFlagManager(IFeatureStore featureStore, ITargetingRulesEngine targetingRulesEngine, string environment, string? licenseKey = null)
         {
             _featureStore = featureStore ?? throw new ArgumentNullException(nameof(featureStore));
+            _targetingRulesEngine = targetingRulesEngine ?? throw new ArgumentNullException(nameof(targetingRulesEngine));
             _environment = environment ?? throw new ArgumentNullException(nameof(environment));
         }
 
@@ -44,19 +60,19 @@ namespace ToggleNet.Core
         }
         
         /// <summary>
-        /// Checks if a feature flag is enabled for a specific user
+        /// Checks if a feature flag is enabled for a specific user with user context
         /// </summary>
         /// <param name="featureName">The name of the feature flag</param>
-        /// <param name="userId">The user identifier</param>
+        /// <param name="userContext">The user context containing user ID and attributes</param>
         /// <param name="trackUsage">Whether to track this access (defaults to true)</param>
         /// <returns>True if the feature is enabled for the user, otherwise false</returns>
-        public async Task<bool> IsEnabledAsync(string featureName, string userId, bool trackUsage = true)
+        public async Task<bool> IsEnabledAsync(string featureName, UserContext userContext, bool trackUsage = true)
         {
             if (string.IsNullOrEmpty(featureName))
                 throw new ArgumentNullException(nameof(featureName));
 
-            if (string.IsNullOrEmpty(userId))
-                throw new ArgumentNullException(nameof(userId));
+            if (userContext == null)
+                throw new ArgumentNullException(nameof(userContext));
 
             var flag = await _featureStore.GetAsync(featureName);
             
@@ -65,20 +81,59 @@ namespace ToggleNet.Core
                 return false;
                 
             bool isEnabled;
-            // If rollout percentage is 100%, feature is enabled for everyone
-            if (flag.RolloutPercentage >= 100)
-                isEnabled = true;
+            
+            // Use targeting rules engine if available and flag is configured for targeting
+            if (flag.UseTargetingRules && flag.TargetingRuleGroups.Any())
+            {
+                isEnabled = await _targetingRulesEngine.EvaluateAsync(flag, userContext);
+            }
             else
-                // Check if the user falls within the rollout percentage
-                isEnabled = FeatureEvaluator.IsInRolloutPercentage(userId, featureName, flag.RolloutPercentage);
+            {
+                // Fall back to percentage rollout
+                if (flag.RolloutPercentage >= 100)
+                    isEnabled = true;
+                else
+                    isEnabled = FeatureEvaluator.IsInRolloutPercentage(userContext.UserId, featureName, flag.RolloutPercentage);
+            }
                 
             // Track usage if feature is enabled, tracking is requested, and tracking is enabled
             if (isEnabled && trackUsage && _enableTracking)
             {
-                await TrackUsageInternalAsync(featureName, userId);
+                await TrackUsageInternalAsync(featureName, userContext.UserId);
             }
             
             return isEnabled;
+        }
+        
+        /// <summary>
+        /// Checks if a feature flag is enabled for a specific user (legacy method, creates basic UserContext)
+        /// </summary>
+        /// <param name="featureName">The name of the feature flag</param>
+        /// <param name="userId">The user identifier</param>
+        /// <param name="trackUsage">Whether to track this access (defaults to true)</param>
+        /// <returns>True if the feature is enabled for the user, otherwise false</returns>
+        public async Task<bool> IsEnabledAsync(string featureName, string userId, bool trackUsage = true)
+        {
+            var userContext = new UserContext { UserId = userId };
+            return await IsEnabledAsync(featureName, userContext, trackUsage);
+        }
+
+        /// <summary>
+        /// Checks if a feature flag is enabled for a specific user with additional attributes
+        /// </summary>
+        /// <param name="featureName">The name of the feature flag</param>
+        /// <param name="userId">The user identifier</param>
+        /// <param name="userAttributes">Additional user attributes for targeting evaluation</param>
+        /// <param name="trackUsage">Whether to track this access (defaults to true)</param>
+        /// <returns>True if the feature is enabled for the user, otherwise false</returns>
+        public async Task<bool> IsEnabledAsync(string featureName, string userId, Dictionary<string, object> userAttributes, bool trackUsage = true)
+        {
+            var userContext = new UserContext 
+            { 
+                UserId = userId,
+                Attributes = userAttributes ?? new Dictionary<string, object>()
+            };
+            return await IsEnabledAsync(featureName, userContext, trackUsage);
         }
         
         /// <summary>
@@ -96,7 +151,7 @@ namespace ToggleNet.Core
             // If flag doesn't exist or is not enabled, return false
             return flag != null && flag.IsEnabled && flag.Environment == _environment;
         }
-
+        
         /// <summary>
         /// Gets all enabled feature flags for a specific user
         /// </summary>

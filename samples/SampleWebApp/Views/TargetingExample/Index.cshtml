@@ -1,0 +1,202 @@
+@{
+    ViewData["Title"] = "Targeting Rules API Examples";
+}
+
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-code-slash me-2"></i>Targeting Rules API Examples
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">This page demonstrates how to use ToggleNet's targeting rules in your code with various user contexts and scenarios.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="bi bi-info-circle me-2"></i>Live API Results
+                </h6>
+                <p class="mb-2">Click the button below to see real-time evaluation results from the ToggleNet API:</p>
+                <button id="loadResults" class="btn btn-primary">
+                    <i class="bi bi-play-circle me-2"></i>Load API Results
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsContainer" class="d-none">
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Feature Evaluation Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="featureResults"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">User Contexts</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="userContexts"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Example Code Implementation</h5>
+                </div>
+                <div class="card-body">
+                    <h6>1. Basic User Context</h6>
+                    <pre><code class="language-csharp">var basicUserContext = new UserContext
+{
+    UserId = "user123",
+    Attributes = new Dictionary&lt;string, object&gt;
+    {
+        ["country"] = "US",
+        ["userType"] = "premium"
+    }
+};
+
+bool isEnabled = await _featureFlagManager.IsEnabledAsync("basic-targeting", basicUserContext);</code></pre>
+
+                    <h6 class="mt-4">2. Complex Enterprise User Context</h6>
+                    <pre><code class="language-csharp">var complexUserContext = new UserContext
+{
+    UserId = "enterprise_user_456",
+    Attributes = new Dictionary&lt;string, object&gt;
+    {
+        ["country"] = "CA",
+        ["plan"] = "enterprise",
+        ["companySize"] = 1500,
+        ["industry"] = "technology",
+        ["appVersion"] = "3.2.1",
+        ["registrationDate"] = DateTime.Parse("2022-06-15"),
+        ["betaTester"] = true,
+        ["deviceType"] = "desktop",
+        ["email"] = "user@company.com"
+    }
+};
+
+bool isAdvancedEnabled = await _featureFlagManager.IsEnabledAsync("advanced-analytics", complexUserContext);</code></pre>
+
+                    <h6 class="mt-4">3. Simplified Overload</h6>
+                    <pre><code class="language-csharp">var mobileUserAttributes = new Dictionary&lt;string, object&gt;
+{
+    ["deviceType"] = "mobile",
+    ["osVersion"] = "iOS 17.0",
+    ["region"] = "north-america"
+};
+
+bool isMobileEnabled = await _featureFlagManager.IsEnabledAsync("mobile-optimization", "mobile_user_789", mobileUserAttributes);</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Next Steps</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/TargetingExample/Dashboard" class="btn btn-outline-primary">
+                            <i class="bi bi-gear me-1"></i>Dashboard Guide
+                        </a>
+                        <a href="/TargetingExample/TestUserScenarios" class="btn btn-outline-primary">
+                            <i class="bi bi-people me-1"></i>Test Scenarios
+                        </a>
+                        <a href="/feature-flags/targeting-rules" class="btn btn-primary">
+                            <i class="bi bi-sliders me-1"></i>Configure Rules
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="bi bi-house me-1"></i>Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('loadResults').addEventListener('click', function() {
+            const button = this;
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Loading...';
+            
+            fetch('/TargetingExample?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    // Show feature results
+                    const featureResults = document.getElementById('featureResults');
+                    let resultsHtml = '';
+                    
+                    Object.keys(data).forEach(key => {
+                        if (key !== 'UserContexts' && typeof data[key] === 'boolean') {
+                            const status = data[key] ? 'success' : 'secondary';
+                            const icon = data[key] ? 'check-circle' : 'x-circle';
+                            resultsHtml += `
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>${key}</span>
+                                    <span class="badge bg-${status}">
+                                        <i class="bi bi-${icon} me-1"></i>${data[key] ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </div>
+                            `;
+                        }
+                    });
+                    featureResults.innerHTML = resultsHtml;
+                    
+                    // Show user contexts
+                    const userContexts = document.getElementById('userContexts');
+                    if (data.UserContexts) {
+                        let contextHtml = '';
+                        Object.keys(data.UserContexts).forEach(contextType => {
+                            const context = data.UserContexts[contextType];
+                            contextHtml += `
+                                <div class="mb-3">
+                                    <h6>${contextType} User</h6>
+                                    <small class="text-muted">User ID: ${context.UserId || context.userId}</small>
+                                    <pre class="small mt-1">${JSON.stringify(context.Attributes || context.attributes, null, 2)}</pre>
+                                </div>
+                            `;
+                        });
+                        userContexts.innerHTML = contextHtml;
+                    }
+                    
+                    // Show results container
+                    document.getElementById('resultsContainer').classList.remove('d-none');
+                    
+                    // Reset button
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i>Reload Results';
+                })
+                .catch(error => {
+                    console.error('Error loading results:', error);
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error - Try Again';
+                });
+        });
+    </script>
+}

@@ -1,0 +1,221 @@
+@model SampleWebApp.Models.TestUserScenariosViewModel
+@{
+    ViewData["Title"] = "Test User Scenarios";
+}
+
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-people me-2"></i>Test User Scenarios
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">@Model.Message</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col">
+            <div class="alert alert-success">
+                <h6 class="alert-heading">
+                    <i class="bi bi-info-circle me-2"></i>How to Use These Scenarios
+                </h6>
+                <ol class="mb-0">
+                    @foreach (var instruction in Model.Instructions)
+                    {
+                        <li>@instruction</li>
+                    }
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var scenario in Model.TestScenarios)
+        {
+            <div class="col-xl-4 col-lg-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-circle me-2"></i>@scenario.Name
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- User Context -->
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                <i class="bi bi-gear me-1"></i>User Context
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <small class="text-muted d-block mb-1">User ID:</small>
+                                <code class="d-block mb-2">@scenario.UserContext.UserId</code>
+                                
+                                <small class="text-muted d-block mb-1">Attributes:</small>
+                                <div class="small">
+                                    @foreach (var attr in scenario.UserContext.Attributes)
+                                    {
+                                        <div class="d-flex justify-content-between border-bottom py-1">
+                                            <span class="text-muted">@attr.Key:</span>
+                                            <span><code>@attr.Value</code></span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature Results -->
+                        <div class="mb-3">
+                            <h6 class="text-success">
+                                <i class="bi bi-toggles me-1"></i>Feature Evaluation Results
+                            </h6>
+                            <div class="list-group">
+                                @foreach (var result in scenario.FeatureResults)
+                                {
+                                    var badgeClass = result.Value ? "bg-success" : "bg-secondary";
+                                    var icon = result.Value ? "check-circle" : "x-circle";
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                        <small>@result.Key</small>
+                                        <span class="badge @badgeClass">
+                                            <i class="bi bi-@icon me-1"></i>@(result.Value ? "Enabled" : "Disabled")
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Copy Button -->
+                        <div class="d-grid">
+                            <button class="btn btn-outline-primary btn-sm copy-json" 
+                                    data-user-id="@scenario.UserContext.UserId"
+                                    data-attributes="@System.Text.Json.JsonSerializer.Serialize(scenario.UserContext.Attributes)">
+                                <i class="bi bi-clipboard me-1"></i>Copy User Context JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clipboard-data me-2"></i>JSON Test Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>Use the buttons above to copy individual user contexts, or copy the complete test data below:</p>
+                    <div class="position-relative">
+                        <pre id="fullJsonData" class="bg-light p-3 rounded"><code>@{
+                            var testData = new List<object>();
+                            foreach (var scenario in Model.TestScenarios)
+                            {
+                                testData.Add(new { 
+                                    Name = scenario.Name, 
+                                    UserId = scenario.UserContext.UserId, 
+                                    Attributes = scenario.UserContext.Attributes 
+                                });
+                            }
+                            var jsonOptions = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+                        }@System.Text.Json.JsonSerializer.Serialize(testData, jsonOptions)</code></pre>
+                        <button class="btn btn-outline-secondary btn-sm position-absolute top-0 end-0 m-2" onclick="copyFullJson()">
+                            <i class="bi bi-clipboard me-1"></i>Copy All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Next Steps</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/TargetingExample" class="btn btn-outline-primary">
+                            <i class="bi bi-code-slash me-1"></i>API Examples
+                        </a>
+                        <a href="/TargetingExample/Dashboard" class="btn btn-outline-primary">
+                            <i class="bi bi-gear me-1"></i>Dashboard Guide
+                        </a>
+                        <a href="/feature-flags/targeting-rules" class="btn btn-primary">
+                            <i class="bi bi-sliders me-1"></i>Test These Scenarios
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary">
+                            <i class="bi bi-house me-1"></i>Back to Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast for copy notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="copyToast" class="toast" role="alert">
+        <div class="toast-header">
+            <i class="bi bi-check-circle text-success me-2"></i>
+            <strong class="me-auto">Copied!</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body">
+            User context copied to clipboard.
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Copy individual user context
+        document.querySelectorAll('.copy-json').forEach(button => {
+            button.addEventListener('click', function() {
+                const userId = this.dataset.userId;
+                const attributes = JSON.parse(this.dataset.attributes);
+                
+                const userContext = {
+                    UserId: userId,
+                    Attributes: attributes
+                };
+                
+                const jsonString = JSON.stringify(userContext, null, 2);
+                
+                navigator.clipboard.writeText(jsonString).then(() => {
+                    showToast('User context copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+            });
+        });
+        
+        // Copy full JSON data
+        function copyFullJson() {
+            const jsonData = document.getElementById('fullJsonData').textContent;
+            navigator.clipboard.writeText(jsonData).then(() => {
+                showToast('All test scenarios copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+        
+        // Show toast notification
+        function showToast(message) {
+            const toastElement = document.getElementById('copyToast');
+            const toastBody = toastElement.querySelector('.toast-body');
+            toastBody.textContent = message;
+            
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+        }
+    </script>
+}

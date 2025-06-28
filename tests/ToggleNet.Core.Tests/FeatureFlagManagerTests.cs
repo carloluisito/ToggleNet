@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using ToggleNet.Core;
 using ToggleNet.Core.Entities;
 using ToggleNet.Core.Storage;
+using ToggleNet.Core.Targeting;
 using Xunit;
 using Moq;
 using System.Collections.Generic;
