@@ -230,16 +230,46 @@ namespace ToggleNet.Dashboard.Pages
 
                 var result = await _targetingEngine.EvaluateAsync(testFlag, userContext);
 
+                // Provide detailed evaluation information
+                string evaluationDetails;
+                if (!testFlag.UseTargetingRules || !testFlag.TargetingRuleGroups.Any())
+                {
+                    evaluationDetails = $"No targeting rules configured. Using fallback percentage: {testFlag.RolloutPercentage}%";
+                }
+                else
+                {
+                    // Check if any rule groups matched
+                    var matchedGroups = new List<string>();
+                    foreach (var group in testFlag.TargetingRuleGroups.Where(g => g.IsEnabled).OrderBy(g => g.Priority))
+                    {
+                        var groupMatches = await _targetingEngine.EvaluateRuleGroupAsync(group, userContext);
+                        if (groupMatches)
+                        {
+                            matchedGroups.Add($"{group.Name} (Priority: {group.Priority}, Rollout: {group.RolloutPercentage}%)");
+                            break; // Only first matching group is used
+                        }
+                    }
+
+                    if (matchedGroups.Any())
+                    {
+                        evaluationDetails = $"Matched rule group: {string.Join(", ", matchedGroups)}";
+                    }
+                    else
+                    {
+                        evaluationDetails = "No targeting rule groups matched. Feature disabled.";
+                    }
+                }
+
                 return new JsonResult(new
                 {
-                    success = true,
-                    result = new
+                    result = result,
+                    message = result ? "Feature is ENABLED for this user" : "Feature is DISABLED for this user",
+                    userContext = new
                     {
-                        isEnabled = result,
-                        reason = "Evaluation completed",
-                        matchedRuleGroup = "N/A",
-                        evaluationDetails = "Basic evaluation result"
-                    }
+                        userId = userContext.UserId,
+                        attributes = userContext.Attributes
+                    },
+                    evaluationDetails = evaluationDetails
                 });
             }
             catch (Exception ex)
