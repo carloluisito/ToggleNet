@@ -2,7 +2,7 @@
 
 ![Build Status](https://github.com/carloluisito/ToggleNet/actions/workflows/nuget-publish.yml/badge.svg?branch=main)
 
-A .NET Standard-compatible Feature Flag SDK similar in style to Hangfire. ToggleNet allows .NET applications to manage and evaluate feature flags with persistent storage, percentage rollout support, per-user flag evaluation, and an embedded dashboard.
+A Feature Flag SDK with .NET Standard 2.0 core compatibility. ToggleNet allows .NET applications to manage and evaluate feature flags with persistent storage, percentage rollout support, per-user flag evaluation, and an embedded dashboard.
 
 ## Running Tests
 
@@ -16,12 +16,12 @@ Tests are also run automatically in CI before NuGet deployment.
 
 ## Features
 
-- .NET Standard 2.0 compatible SDK for use across .NET frameworks
+- .NET Standard 2.0 compatible SDK for core functionality
 - Persistent storage with EF Core (supports PostgreSQL and SQL Server)
 - Percentage-based rollout support
 - User-specific feature flag evaluation
 - **Advanced Targeting Rules Engine** for sophisticated user targeting
-- Embedded dashboard for managing feature flags
+- Embedded dashboard for managing feature flags (requires .NET 9.0+)
 - Secure dashboard access with authentication
 - Feature usage analytics and tracking
 - Multiple environment support
@@ -46,11 +46,14 @@ dotnet add package ToggleNet.Dashboard
 
 ### Configuration
 
-In your `Startup.cs` file, add the following:
+In your `Startup.cs` or `Program.cs` file, add the following:
 
 ```csharp
 using ToggleNet.Dashboard;
-using ToggleNet.Dashboard.Auth; // Required for authentication
+using ToggleNet.Dashboard.Auth;
+using ToggleNet.EntityFrameworkCore.Extensions;
+
+// In ConfigureServices method:
 // For PostgreSQL:
 services.AddEfCoreFeatureStorePostgres(
     Configuration.GetConnectionString("PostgresConnection"),
@@ -60,7 +63,6 @@ services.AddEfCoreFeatureStorePostgres(
 services.AddEfCoreFeatureStoreSqlServer(
     Configuration.GetConnectionString("SqlServerConnection"),
     "Development");
-
 
 // Add the dashboard with authentication (recommended for production)
 services.AddToggleNetDashboard(
@@ -77,25 +79,34 @@ services.AddToggleNetDashboard(
         DisplayName = "Developer"
     }
 );
+
+// In Configure method:
+// Ensure database is created and apply migrations
+ToggleNet.EntityFrameworkCore.Extensions.ServiceCollectionExtensions.EnsureFeatureFlagDbCreated(app.ApplicationServices);
+
+// Add the dashboard middleware
+app.UseToggleNetDashboard();
 ```
 
 You can also configure the database provider dynamically:
 
 ```csharp
 // Get database provider from configuration
-string provider = Configuration.GetSection("FeatureFlags:DatabaseProvider").Value;
+string provider = Configuration.GetSection("FeatureFlags:DatabaseProvider").Value ?? "Postgres";
+string environment = Configuration.GetSection("FeatureFlags:Environment").Value ?? "Development";
 
 if (provider.Equals("SqlServer", StringComparison.OrdinalIgnoreCase))
 {
     services.AddEfCoreFeatureStoreSqlServer(
         Configuration.GetConnectionString("SqlServerConnection"),
-        "Development");
+        environment);
 }
 else
 {
+    // Default to PostgreSQL
     services.AddEfCoreFeatureStorePostgres(
         Configuration.GetConnectionString("PostgresConnection"),
-        "Development");
+        environment);
 }
 ```
 
@@ -305,7 +316,7 @@ app.UseToggleNetDashboard("/my-feature-flags");
 The dashboard provides multiple pages:
 * **Dashboard Home**: Manage and configure feature flags
 * **Targeting Rules**: Advanced configuration interface for targeting rules
-  * Visual rule builder interface with drag-and-drop functionality
+  * Form-based rule builder interface for creating targeting rules
   * Real-time rule testing with sample user data and detailed evaluation results
   * Support for complex rule groups with AND/OR logic
   * Priority-based rule ordering with numeric values
@@ -320,7 +331,7 @@ The dashboard provides multiple pages:
   
 ### Dashboard Authentication
 
-For security, the dashboard includes authentication similar to Hangfire's approach:
+The dashboard includes built-in authentication for security:
 
 ```csharp
 // Add authentication with predefined users
@@ -335,10 +346,13 @@ services.AddToggleNetDashboard(
     new DashboardUserCredential 
     { 
         Username = "developer", 
-        Password = "devpassword"
+        Password = "devpassword",
+        DisplayName = "Developer User"
     }
 );
 ```
+
+**Important:** The dashboard requires authentication by default. Always use strong passwords in production environments.
 
 ## Sample Application
 
@@ -390,7 +404,7 @@ bool isEnabled = await _featureFlagManager.IsEnabledAsync("premium-features", us
 
 The new Targeting Rules dashboard (`/feature-flags/targeting-rules`) provides a user-friendly interface for configuring complex targeting scenarios:
 
-- **Visual Rule Builder**: Intuitive interface for creating targeting rules without code
+- **Form-based Rule Builder**: Intuitive interface for creating targeting rules without code
 - **Rule Groups**: Organize related rules and set logical operators (AND/OR)
 - **Live Testing**: Test your targeting rules with sample user data before deployment
 - **Rule Priorities**: Control evaluation order with numeric priority values
@@ -427,11 +441,12 @@ ToggleNet automatically applies any pending database migrations and ensures the 
 
 ## Security
 
-The ToggleNet dashboard is protected by authentication to prevent unauthorized access to feature flag management. 
+The ToggleNet dashboard is protected by authentication to prevent unauthorized access to feature flag management. Authentication is **enabled by default** and cannot be disabled in production scenarios.
 
-If you're upgrading from a previous version of ToggleNet, note that authentication is enabled by default.
-
-For production environments, always enable authentication and use strong passwords.
+For production environments:
+- Always use strong, unique passwords for dashboard users
+- Consider implementing custom authentication providers for integration with your existing user management systems
+- The dashboard uses secure cookie-based authentication with configurable timeouts
 
 ## License
 
