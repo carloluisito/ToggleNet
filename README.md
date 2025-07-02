@@ -422,42 +422,52 @@ Get a comprehensive overview of ToggleNet's dashboard and features through these
 
 ### Dashboard Overview
 ![Dashboard Overview](docs/images/dashboard-overview.png)
+
 *Main dashboard showing all feature flags with their current status, rollout percentages, and scheduling information*
 
 ### Creating a Feature Flag
 ![Create Feature Flag](docs/images/create-feature-flag.png)
+
 *Simple form to create a new feature flag with name, description, and initial settings*
 
 ### Feature Flag Settings
 ![Feature Flag Settings](docs/images/feature-flag-settings.png)
+
 *Detailed view of a feature flag showing enabled/disabled state, rollout percentage, and quick actions*
 
 ### Targeting Rules Configuration
 ![Targeting Rules](docs/images/targeting-rules.png)
+
 *Advanced targeting rules interface with attribute-based conditions, operators, and rule groups*
 
 ### Time-Based Scheduling
 ![Scheduling Interface](docs/images/scheduling-interface.png)
+
 *Scheduling panel for automated feature flag activation/deactivation with timezone support*
 
 ### Schedule Activation
 ![Schedule Activation](docs/images/schedule-activation.png)
+
 *Form to schedule a feature flag activation with start time, duration, and timezone selection*
 
 ### Schedule Deactivation
 ![Schedule Deactivation](docs/images/schedule-deactivation.png)
+
 *Interface to schedule automatic feature flag deactivation at a specific time*
 
 ### Temporary Activation
 ![Temporary Activation](docs/images/temporary-activation.png)
+
 *Quick temporary activation with predefined duration options (1 hour, 1 day, 1 week, etc.)*
 
 ### User-Specific Dashboard
 ![User Dashboard](docs/images/user-dashboard.png)
+
 *Personalized view showing feature flag status for a specific user based on targeting rules*
 
 ### Authentication
 ![Dashboard Login](docs/images/dashboard-login.png)
+
 *Secure login interface for dashboard access with configurable user credentials*
 
 ## Dashboard
