@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using ToggleNet.Core.Entities;
+using ToggleNet.Core.Scheduling;
 
 namespace SampleWebApp.Models
 {
@@ -37,5 +39,11 @@ namespace SampleWebApp.Models
     {
         public string UserId { get; set; } = string.Empty;
         public Dictionary<string, object> Attributes { get; set; } = new();
+    }
+
+    public class SchedulingExampleViewModel
+    {
+        public IEnumerable<ScheduledFlagChange> UpcomingChanges { get; set; } = new List<ScheduledFlagChange>();
+        public IEnumerable<FeatureFlag> AllFlags { get; set; } = new List<FeatureFlag>();
     }
 }

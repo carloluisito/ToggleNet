@@ -58,6 +58,27 @@
                             </a>
                         </div>
                     </div>
+
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading mb-2">
+                            <i class="bi bi-clock me-2"></i>Time-Based Scheduling Examples
+                        </h6>
+                        <p class="mb-2">Explore automated feature flag scheduling capabilities:</p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="/SchedulingExample" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-rocket-takeoff me-1"></i>Product Launches
+                            </a>
+                            <a href="/SchedulingExample" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-lightning-fill me-1"></i>Flash Sales
+                            </a>
+                            <a href="/SchedulingExample" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-tools me-1"></i>Maintenance Windows
+                            </a>
+                            <a href="/feature-flags/scheduling" class="btn btn-sm btn-warning">
+                                <i class="bi bi-calendar3 me-1"></i>Scheduling Dashboard
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -130,36 +151,95 @@
                     <h5 class="mb-0">All Feature Flags</h5>
                 </div>
                 <div class="card-body">
-                    @if (Model.EnabledFlags.Any())
+                    @if (Model.AllFlags.Any())
                     {
-                        <ul class="list-group">
-                            @foreach (var flag in Model.EnabledFlags)
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        @flag.Key
-                                        @if (flag.Value)
-                                        {
-                                            <span class="badge bg-success rounded-pill ms-2">Enabled</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary rounded-pill ms-2">Disabled</span>
-                                        }
-                                    </div>
-                                    @if (flag.Value)
+                        <div class="table-responsive">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Flag</th>
+                                        <th>Status</th>
+                                        <th>User Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var flag in Model.AllFlags)
                                     {
-                                        <button class="btn btn-outline-primary btn-sm use-feature" data-feature="@flag.Key">
-                                            <i class="bi bi-play-circle me-1"></i> Use
-                                        </button>
+                                        <tr>
+                                            <td>
+                                                <strong>@flag.Name</strong>
+                                                @if (!string.IsNullOrEmpty(flag.Description))
+                                                {
+                                                    <br><small class="text-muted">@flag.Description</small>
+                                                }
+                                                
+                                                <!-- Additional info badges -->
+                                                <div class="mt-1">
+                                                    @if (flag.UseTargetingRules)
+                                                    {
+                                                        <span class="badge bg-info badge-sm">Targeting</span>
+                                                    }
+                                                    @if (flag.UseTimeBasedActivation)
+                                                    {
+                                                        <span class="badge bg-warning badge-sm">Scheduled</span>
+                                                    }
+                                                    @if (flag.RolloutPercentage < 100 && !flag.UseTargetingRules)
+                                                    {
+                                                        <span class="badge bg-secondary badge-sm">@flag.RolloutPercentage%</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (flag.IsEnabled)
+                                                {
+                                                    @if (flag.UseTimeBasedActivation && !flag.IsTimeActive)
+                                                    {
+                                                        <span class="badge bg-warning text-dark">Scheduled</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success">Enabled</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Disabled</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (flag.IsEnabledForUser)
+                                                {
+                                                    <span class="badge bg-success">✓ Enabled</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">✗ Disabled</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-outline-primary btn-sm use-feature" 
+                                                        data-feature="@flag.Name" 
+                                                        @(!flag.IsEnabledForUser ? "disabled" : "")
+                                                        title="@(flag.IsEnabledForUser ? "Test this feature" : "Feature not enabled for this user")">
+                                                    <i class="bi bi-play-circle me-1"></i>Test
+                                                </button>
+                                            </td>
+                                        </tr>
                                     }
-                                </li>
-                            }
-                        </ul>
+                                </tbody>
+                            </table>
+                        </div>
                     }
                     else
                     {
-                        <p>No feature flags defined. Go to the <a href="/feature-flags">Feature Flags Dashboard</a> to add some!</p>
+                        <div class="text-center py-4">
+                            <i class="bi bi-flag fs-2 text-muted d-block mb-2"></i>
+                            <p class="text-muted">No feature flags found.</p>
+                            <a href="/feature-flags" class="btn btn-primary btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i>Create Feature Flags
+                            </a>
+                        </div>
                     }
                 </div>
             </div>

@@ -85,6 +85,20 @@ namespace ToggleNet.EntityFrameworkCore
             entity.Property(e => e.RolloutPercentage)
                 .HasDefaultValue(0);
                 
+            // Configure time-based scheduling properties
+            entity.Property(e => e.UseTimeBasedActivation)
+                .HasDefaultValue(false);
+                
+            entity.Property(e => e.StartTime)
+                .IsRequired(false);
+                
+            entity.Property(e => e.EndTime)
+                .IsRequired(false);
+                
+            entity.Property(e => e.TimeZone)
+                .HasMaxLength(100)
+                .IsRequired(false);
+                
             // Configure FeatureUsage entity
             var usageEntity = modelBuilder.Entity<FeatureUsage>();
             

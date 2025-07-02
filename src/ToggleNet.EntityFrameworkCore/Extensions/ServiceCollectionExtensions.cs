@@ -80,7 +80,6 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
             {
                 using (var scope = serviceProvider.CreateScope())
                 {
-                    Console.WriteLine("Initializing ToggleNet database...");
                     var dbContext = scope.ServiceProvider.GetRequiredService<FeatureFlagsDbContext>();
                     
                     // Check database connection and create if needed
@@ -91,8 +90,6 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
                     
                     // Enable usage tracking by default
                     EnableFeatureTracking(scope.ServiceProvider);
-                    
-                    Console.WriteLine("ToggleNet database initialization completed successfully.");
                 }
             }
             catch (Exception ex)
@@ -100,7 +97,6 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
                 LogException("Error initializing ToggleNet database", ex);
                 
                 // Continue without throwing to allow the application to run even with database issues
-                Console.WriteLine("Application will attempt to continue despite database initialization issues.");
             }
         }
 
@@ -116,11 +112,6 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
                 if (featureFlagManager != null)
                 {
                     featureFlagManager.EnableTracking(true);
-                    Console.WriteLine("Feature usage tracking enabled successfully.");
-                }
-                else
-                {
-                    Console.WriteLine("Warning: Could not enable feature tracking - FeatureFlagManager not available.");
                 }
             }
             catch (Exception ex)
@@ -140,11 +131,10 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
                 try
                 {
                     canConnect = dbContext.Database.CanConnect();
-                    Console.WriteLine($"Database connection status: {(canConnect ? "Connected" : "Not connected")}");
                 }
-                catch (Exception connEx)
+                catch (Exception)
                 {
-                    Console.WriteLine($"Error checking database connection: {connEx.Message}");
+                    // Database connection failed, will attempt to create
                 }
                 
                 if (!canConnect)
@@ -152,7 +142,6 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
                     var connection = dbContext.Database.GetDbConnection();
                     connection.Open();
                     connection.Close();
-                    Console.WriteLine("Database created successfully.");
                 }
             }
             catch (Exception ex)
@@ -168,9 +157,7 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
         {
             try
             {
-                Console.WriteLine("Creating database schema...");
                 dbContext.Database.EnsureCreated();
-                Console.WriteLine("Schema created successfully.");
             }
             catch (Exception ex)
             {
@@ -184,12 +171,8 @@ namespace ToggleNet.EntityFrameworkCore.Extensions
         /// </summary>
         private static void LogException(string message, Exception ex)
         {
-            Console.WriteLine($"{message}: {ex.Message}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Inner exception: {ex.InnerException.Message}");
-            }
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            // In production, these would be logged through a proper logging framework
+            // For now, we silently handle the exceptions to avoid console spam
         }
     }
 }

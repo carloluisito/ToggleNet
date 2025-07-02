@@ -1,0 +1,363 @@
+@model SampleWebApp.Models.SchedulingExampleViewModel
+@{
+    ViewData["Title"] = "Scheduling Examples";
+}
+
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="display-4">⏰ Time-Based Scheduling Examples</h1>
+                    <p class="lead text-muted">Explore ToggleNet's powerful scheduling capabilities with real-world scenarios</p>
+                </div>
+                <div>
+                    <a href="/feature-flags/scheduling" class="btn btn-primary">
+                        <i class="bi bi-calendar3 me-2"></i>Open Scheduling Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            @if (TempData["Message"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    @TempData["Message"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            <!-- Upcoming Changes -->
+            @if (Model.UpcomingChanges.Any())
+            {
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-warning bg-opacity-10 border-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Upcoming Scheduled Changes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            @foreach (var change in Model.UpcomingChanges.Take(6))
+                            {
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <div class="card border-start @(change.ChangeType == ToggleNet.Core.Scheduling.ScheduledChangeType.Activation ? "border-success" : "border-danger") border-3">
+                                        <div class="card-body py-2 px-3">
+                                            <h6 class="card-title mb-1">@change.FlagName</h6>
+                                            <p class="card-text mb-1">
+                                                <span class="badge @(change.ChangeType == ToggleNet.Core.Scheduling.ScheduledChangeType.Activation ? "bg-success" : "bg-danger")">
+                                                    @change.ChangeType
+                                                </span>
+                                            </p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-clock me-1"></i><span class="utc-time" data-utc="@change.ChangeTime.ToString("yyyy-MM-ddTHH:mm:ss")Z">@change.ChangeTime.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                                                <br>
+                                                <i class="bi bi-hourglass-split me-1"></i>@change.TimeUntilChange.TotalHours.ToString("F1") hours from now
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Scheduling Examples -->
+            <div class="row">
+                <!-- Product Launch -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-primary bg-opacity-10">
+                            <h5 class="mb-0 text-primary">
+                                <i class="bi bi-rocket-takeoff me-2"></i>Product Launch Scheduling
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Schedule Black Friday deals to automatically activate on November 29th at 12:01 AM EST and run for 4 days through Cyber Monday.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <code class="text-dark">
+                                    <strong>Feature:</strong> black-friday-deals<br>
+                                    <strong>Start:</strong> Nov 29, 2025 12:01 AM EST<br>
+                                    <strong>Duration:</strong> 4 days<br>
+                                    <strong>Timezone:</strong> America/New_York
+                                </code>
+                            </div>
+                            <form method="post" asp-action="ScheduleProductLaunch">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-calendar-plus me-2"></i>Schedule Black Friday Launch
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Maintenance Window -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="mb-0 text-warning">
+                                <i class="bi bi-tools me-2"></i>Maintenance Window
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Schedule a maintenance mode feature for next Sunday at 2:00 AM that will automatically activate for a 3-hour maintenance window.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <code class="text-dark">
+                                    <strong>Feature:</strong> maintenance-mode<br>
+                                    <strong>Start:</strong> Next Sunday 2:00 AM<br>
+                                    <strong>Duration:</strong> 3 hours<br>
+                                    <strong>Timezone:</strong> UTC
+                                </code>
+                            </div>
+                            <form method="post" asp-action="ScheduleMaintenanceWindow">
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-calendar-event me-2"></i>Schedule Maintenance
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flash Sale -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-danger bg-opacity-10">
+                            <h5 class="mb-0 text-danger">
+                                <i class="bi bi-lightning-fill me-2"></i>Flash Sale (Temporary)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Start a flash sale immediately that will automatically deactivate after 6 hours. Perfect for urgent promotions.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <code class="text-dark">
+                                    <strong>Feature:</strong> flash-sale-banner<br>
+                                    <strong>Start:</strong> Immediately<br>
+                                    <strong>Duration:</strong> 6 hours<br>
+                                    <strong>Type:</strong> Temporary Activation
+                                </code>
+                            </div>
+                            <form method="post" asp-action="StartFlashSale">
+                                <button type="submit" class="btn btn-danger w-100">
+                                    <i class="bi bi-play-fill me-2"></i>Start Flash Sale Now
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Beta Rollout -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h5 class="mb-0 text-info">
+                                <i class="bi bi-star-fill me-2"></i>Beta Feature Rollout
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Schedule a new beta dashboard feature to launch next Monday at 9:00 AM PST and run for 2 weeks of testing.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <code class="text-dark">
+                                    <strong>Feature:</strong> beta-new-dashboard<br>
+                                    <strong>Start:</strong> Next Monday 9:00 AM PST<br>
+                                    <strong>Duration:</strong> 2 weeks<br>
+                                    <strong>Timezone:</strong> America/Los_Angeles
+                                </code>
+                            </div>
+                            <form method="post" asp-action="ScheduleBetaRollout">
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="bi bi-calendar-check me-2"></i>Schedule Beta Rollout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Deactivation -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-secondary bg-opacity-10">
+                            <h5 class="mb-0 text-secondary">
+                                <i class="bi bi-stop-circle me-2"></i>Legacy Feature Sunset
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Schedule an old legacy checkout feature to be automatically deactivated in 30 days to ensure smooth migration.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <code class="text-dark">
+                                    <strong>Feature:</strong> legacy-checkout<br>
+                                    <strong>Deactivate:</strong> In 30 days<br>
+                                    <strong>Type:</strong> Scheduled Deactivation<br>
+                                    <strong>Timezone:</strong> UTC
+                                </code>
+                            </div>
+                            <form method="post" asp-action="ScheduleFeatureDeactivation">
+                                <button type="submit" class="btn btn-secondary w-100">
+                                    <i class="bi bi-calendar-x me-2"></i>Schedule Deactivation
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Link -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100 shadow-sm border-0 border-success">
+                        <div class="card-header bg-success bg-opacity-10">
+                            <h5 class="mb-0 text-success">
+                                <i class="bi bi-gear-fill me-2"></i>Advanced Scheduling
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">For more complex scheduling scenarios, custom durations, and detailed management, use the full scheduling dashboard.</p>
+                            <div class="bg-light p-3 rounded mb-3">
+                                <small class="text-muted">
+                                    • Custom date and time selection<br>
+                                    • Timezone support for global rollouts<br>
+                                    • Flexible duration (hours, days, months)<br>
+                                    • Visual scheduling overview<br>
+                                    • Edit existing schedules
+                                </small>
+                            </div>
+                            <a href="/feature-flags/scheduling" class="btn btn-success w-100">
+                                <i class="bi bi-box-arrow-up-right me-2"></i>Open Scheduling Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Scheduled Flags -->
+            <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0">All Scheduled Feature Flags</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.AllFlags.Any(f => f.UseTimeBasedActivation))
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Flag Name</th>
+                                        <th>Status</th>
+                                        <th>Start Time</th>
+                                        <th>End Time</th>
+                                        <th>Time Zone</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var flag in Model.AllFlags.Where(f => f.UseTimeBasedActivation))
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@flag.Name</strong>
+                                                @if (!string.IsNullOrEmpty(flag.Description))
+                                                {
+                                                    <br><small class="text-muted">@flag.Description</small>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (flag.IsTimeActive())
+                                                {
+                                                    <span class="badge bg-success">Active</span>
+                                                }
+                                                else if (flag.StartTime.HasValue && flag.StartTime.Value > DateTime.UtcNow)
+                                                {
+                                                    <span class="badge bg-warning text-dark">Scheduled</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Inactive</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (flag.StartTime.HasValue)
+                                                {
+                                                    <span class="utc-time" data-utc="@flag.StartTime.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">
+                                                        @flag.StartTime.Value.ToString("MMM d, yyyy h:mm tt")
+                                                        <small class="text-muted d-block">UTC</small>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">—</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (flag.EffectiveEndTime.HasValue)
+                                                {
+                                                    <span class="utc-time" data-utc="@flag.EffectiveEndTime.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">
+                                                        @flag.EffectiveEndTime.Value.ToString("MMM d, yyyy h:mm tt")
+                                                        <small class="text-muted d-block">UTC</small>
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Indefinite</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(flag.TimeZone))
+                                                {
+                                                    @flag.TimeZone
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">UTC</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                <form method="post" asp-action="RemoveScheduling" class="d-inline">
+                                                    <input type="hidden" name="flagName" value="@flag.Name" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                            onclick="return confirmRemoveScheduling('@flag.Name')">
+                                                        <i class="bi bi-trash me-1"></i>Remove
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
+                            <h5 class="text-muted">No scheduled flags found</h5>
+                            <p class="text-muted">Try one of the scheduling examples above or use the dashboard to create scheduled features.</p>
+                            <a href="/feature-flags/scheduling" class="btn btn-primary">
+                                <i class="bi bi-calendar-plus me-2"></i>Open Scheduling Dashboard
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Info Box -->
+            <div class="alert alert-info mt-4" role="alert">
+                <h6><i class="bi bi-info-circle me-2"></i>About Time-Based Scheduling</h6>
+                <p class="mb-0">
+                    ToggleNet's scheduling system allows you to automate feature flag lifecycles with precision. 
+                    Features can be scheduled to activate at specific times, run for defined durations, and automatically 
+                    deactivate when no longer needed. This is perfect for product launches, maintenance windows, 
+                    marketing campaigns, and gradual feature rollouts.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/scheduling-example.js"></script>
+}

@@ -1,0 +1,326 @@
+@page
+@model ToggleNet.Dashboard.Pages.SchedulingModel
+@{
+    ViewData["Title"] = "Feature Flag Scheduling";
+    Layout = "_Layout";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="mb-1">Feature Flag Scheduling</h1>
+            <p class="text-muted">Manage time-based activation and deactivation for <span class="badge bg-primary">@Model.Environment</span> environment</p>
+        </div>
+        <div>
+            <a href="@Url.Page("/Index")" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <form id="antiforgeryForm" class="d-none">
+        @Html.AntiForgeryToken()
+    </form>
+
+    <!-- Upcoming Changes -->
+    @if (Model.UpcomingChanges.Any())
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-warning bg-opacity-10 border-warning">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Upcoming Changes (Next 7 Days)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @foreach (var change in Model.UpcomingChanges.Take(6))
+                    {
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card border-start @(change.ChangeType == ToggleNet.Core.Scheduling.ScheduledChangeType.Activation ? "border-success" : "border-danger") border-3">
+                                <div class="card-body py-2 px-3">
+                                    <h6 class="card-title mb-1">@change.FlagName</h6>
+                                    <p class="card-text mb-1">
+                                        <span class="badge @(change.ChangeType == ToggleNet.Core.Scheduling.ScheduledChangeType.Activation ? "bg-success" : "bg-danger")">
+                                            @change.ChangeType
+                                        </span>
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i><span class="utc-time" data-utc="@change.ChangeTime.ToString("yyyy-MM-ddTHH:mm:ss")Z">@change.ChangeTime.ToString("MMM d, yyyy h:mm tt") UTC</span>
+                                        <br>
+                                        <i class="bi bi-hourglass-split me-1"></i>@change.TimeUntilChange.TotalHours.ToString("F1") hours
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Schedule Configuration -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">Schedule Feature Flag</h5>
+        </div>
+        <div class="card-body">
+            <!-- Flag Selection -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="flagSelect" class="form-label">Select Feature Flag</label>
+                    <select class="form-select" id="flagSelect" onchange="loadFlagScheduling()">
+                        <option value="">Select a feature flag...</option>
+                        @foreach (var flag in Model.Flags)
+                        {
+                            var isSelected = flag.Id.ToString() == Model.SelectedFlagId;
+                            <option value="@flag.Name" data-flag-id="@flag.Id" selected="@isSelected">
+                                @flag.Name (@(flag.IsEnabled ? "Enabled" : "Disabled"))
+                            </option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Current Scheduling Info -->
+            <div id="currentSchedulingInfo" class="d-none">
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle me-2"></i>Current Scheduling</h6>
+                    <div id="schedulingDetails"></div>
+                </div>
+            </div>
+
+            <!-- Scheduling Options -->
+            <div id="schedulingOptions" class="d-none">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success bg-opacity-10">
+                                <h6 class="mb-0 text-success">
+                                    <i class="bi bi-play-circle me-2"></i>Schedule Activation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="scheduleActivationForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Start Time</label>
+                                        <input type="datetime-local" class="form-control" id="activationStartTime" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Duration (Optional)</label>
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="activationDurationHours" placeholder="Hours" min="0">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="activationDurationDays" placeholder="Days" min="0">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="activationDurationMonths" placeholder="Months" min="0">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Leave empty for indefinite activation</small>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Time Zone (Optional)</label>
+                                        <select class="form-select" id="activationTimeZone">
+                                            <option value="">UTC (Default)</option>
+                                            <option value="America/New_York">Eastern Time</option>
+                                            <option value="America/Chicago">Central Time</option>
+                                            <option value="America/Denver">Mountain Time</option>
+                                            <option value="America/Los_Angeles">Pacific Time</option>
+                                            <option value="Europe/London">London</option>
+                                            <option value="Europe/Paris">Paris</option>
+                                            <option value="Asia/Tokyo">Tokyo</option>
+                                            <option value="Australia/Sydney">Sydney</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-calendar-plus me-2"></i>Schedule Activation
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger bg-opacity-10">
+                                <h6 class="mb-0 text-danger">
+                                    <i class="bi bi-stop-circle me-2"></i>Schedule Deactivation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="scheduleDeactivationForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">End Time</label>
+                                        <input type="datetime-local" class="form-control" id="deactivationEndTime" required>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger w-100">
+                                        <i class="bi bi-calendar-x me-2"></i>Schedule Deactivation
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 mb-4">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning bg-opacity-10">
+                                <h6 class="mb-0 text-warning">
+                                    <i class="bi bi-clock me-2"></i>Temporary Activation
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="scheduleTemporaryForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Duration</label>
+                                        <div class="row">
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="tempDurationHours" placeholder="Hours" min="0">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="tempDurationDays" placeholder="Days" min="0">
+                                            </div>
+                                            <div class="col-4">
+                                                <input type="number" class="form-control" id="tempDurationMonths" placeholder="Months" min="0">
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Activate now for the specified duration</small>
+                                    </div>
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-play-fill me-2"></i>Activate Temporarily
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Remove Scheduling -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-secondary">
+                            <div class="card-body text-center">
+                                <h6 class="text-secondary">
+                                    <i class="bi bi-x-circle me-2"></i>Remove Time-Based Scheduling
+                                </h6>
+                                <p class="text-muted mb-3">Remove all time-based scheduling from this flag</p>
+                                <button type="button" class="btn btn-outline-secondary" onclick="removeScheduling()">
+                                    <i class="bi bi-trash me-2"></i>Remove Scheduling
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Scheduled Flags -->
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0">All Scheduled Flags</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Flag Name</th>
+                            <th>Status</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Time Zone</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var flag in Model.Flags.Where(f => f.UseTimeBasedActivation))
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@flag.Name</strong>
+                                    <br>
+                                    <small class="text-muted">@flag.Description</small>
+                                </td>
+                                <td>
+                                    @if (flag.IsTimeActive())
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else if (flag.StartTime.HasValue && flag.StartTime.Value > DateTime.UtcNow)
+                                    {
+                                        <span class="badge bg-warning text-dark">Scheduled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (flag.StartTime.HasValue)
+                                    {
+                                        <span class="utc-time" data-utc="@flag.StartTime.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">
+                                            @flag.StartTime.Value.ToString("MMM d, yyyy h:mm tt")
+                                            <small class="text-muted d-block">UTC</small>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (flag.EffectiveEndTime.HasValue)
+                                    {
+                                        <span class="utc-time" data-utc="@flag.EffectiveEndTime.Value.ToString("yyyy-MM-ddTHH:mm:ss")Z">
+                                            @flag.EffectiveEndTime.Value.ToString("MMM d, yyyy h:mm tt")
+                                            <small class="text-muted d-block">UTC</small>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Indefinite</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(flag.TimeZone))
+                                    {
+                                        @flag.TimeZone
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">UTC</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="selectFlag('@flag.Name')">
+                                        <i class="bi bi-pencil me-1"></i>Edit
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.Flags.Any(f => f.UseTimeBasedActivation))
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="py-4 text-muted">
+                                        <i class="bi bi-calendar-x fs-2 d-block mb-3"></i>
+                                        <h5>No scheduled flags found</h5>
+                                        <p>Select a flag above to configure time-based scheduling</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="~/js/scheduling.js"></script>
+}

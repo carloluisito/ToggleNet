@@ -80,6 +80,10 @@ namespace ToggleNet.Core
             if (flag == null || !flag.IsEnabled || flag.Environment != _environment)
                 return false;
                 
+            // Check time-based activation first
+            if (!flag.IsTimeActive())
+                return false;
+                
             bool isEnabled;
             
             // Use targeting rules engine if available and flag is configured for targeting
@@ -149,7 +153,7 @@ namespace ToggleNet.Core
             var flag = await _featureStore.GetAsync(featureName);
             
             // If flag doesn't exist or is not enabled, return false
-            return flag != null && flag.IsEnabled && flag.Environment == _environment;
+            return flag != null && flag.IsEnabled && flag.Environment == _environment && flag.IsTimeActive();
         }
         
         /// <summary>
@@ -176,6 +180,18 @@ namespace ToggleNet.Core
                 
             flag.UpdatedAt = DateTime.UtcNow;
             return _featureStore.SetFlagAsync(flag);
+        }
+        
+        /// <summary>
+        /// Deletes a feature flag by name
+        /// </summary>
+        /// <param name="featureName">The name of the feature flag to delete</param>
+        public Task DeleteFlagAsync(string featureName)
+        {
+            if (string.IsNullOrEmpty(featureName))
+                throw new ArgumentNullException(nameof(featureName));
+                
+            return _featureStore.DeleteFlagAsync(featureName, _environment);
         }
         
         /// <summary>

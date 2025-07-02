@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
+using System.Threading.Tasks;
+using SampleWebApp.Services;
 using ToggleNet.Dashboard;
 using ToggleNet.Dashboard.Auth;
 using ToggleNet.EntityFrameworkCore.Extensions;
@@ -56,6 +58,9 @@ namespace SampleWebApp
                     DisplayName = "Regular User"
                 });
 
+            // Add feature flag seeder for demo data
+            services.AddFeatureFlagSeeder();
+
             // Add controllers for the sample app
             services.AddControllersWithViews();
         }
@@ -67,12 +72,25 @@ namespace SampleWebApp
             {
                 // Ensure the database is created and migrations are applied
                 ToggleNet.EntityFrameworkCore.Extensions.ServiceCollectionExtensions.EnsureFeatureFlagDbCreated(app.ApplicationServices);
+                
+                // Seed initial feature flags for scheduling examples
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        await app.ApplicationServices.SeedFeatureFlagsAsync();
+                    }
+                    catch (Exception)
+                    {
+                        // Silently handle seeding failures to avoid console spam
+                        // In production, this would be logged through a proper logging framework
+                    }
+                });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Log the exception but continue starting the app
-                // In real-world scenarios, you might want to handle this differently
-                Console.WriteLine($"Failed to initialize the database: {ex.Message}");
+                // Silently handle initialization failures to avoid console spam
+                // In production, this would be logged through a proper logging framework
             }
 
             if (env.IsDevelopment())

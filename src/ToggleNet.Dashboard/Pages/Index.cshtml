@@ -15,6 +15,9 @@
             <a href="@Url.Page("/TargetingRules")" class="btn btn-outline-primary me-2">
                 <i class="bi bi-target me-2"></i>Targeting Rules
             </a>
+            <a href="@Url.Page("/Scheduling")" class="btn btn-outline-primary me-2">
+                <i class="bi bi-calendar-event me-2"></i>Scheduling
+            </a>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createFlagModal">
                 <i class="bi bi-plus-circle me-2"></i>Add New Flag
             </button>
@@ -41,6 +44,7 @@
                                     <th class="text-center">Enabled</th>
                                     <th>Rollout %</th>
                                     <th class="text-center">Targeting Rules</th>
+                                    <th class="text-center">Scheduling</th>
                                     <th>Updated</th>
                                     <th class="text-end pe-4">Actions</th>
                                 </tr>
@@ -100,17 +104,71 @@
                                                     </a>
                                                 }
                                             </td>
+                                            <td class="text-center">
+                                                @if (flag.UseTimeBasedActivation)
+                                                {
+                                                    <div class="scheduling-info">
+                                                        @if (flag.StartTime.HasValue)
+                                                        {
+                                                            @if (flag.StartTime.Value > DateTime.UtcNow)
+                                                            {
+                                                                <span class="badge bg-warning text-dark" title="Scheduled to start @flag.StartTime.Value.ToString("MMM d, yyyy h:mm tt") UTC">
+                                                                    <i class="bi bi-clock me-1"></i>Scheduled
+                                                                </span>
+                                                            }
+                                                            else if (flag.EffectiveEndTime.HasValue && flag.EffectiveEndTime.Value > DateTime.UtcNow)
+                                                            {
+                                                                <span class="badge bg-success" title="Active until @flag.EffectiveEndTime.Value.ToString("MMM d, yyyy h:mm tt") UTC">
+                                                                    <i class="bi bi-play-circle me-1"></i>Active
+                                                                </span>
+                                                            }
+                                                            else if (flag.EffectiveEndTime.HasValue && flag.EffectiveEndTime.Value <= DateTime.UtcNow)
+                                                            {
+                                                                <span class="badge bg-secondary" title="Expired on @flag.EffectiveEndTime.Value.ToString("MMM d, yyyy h:mm tt") UTC">
+                                                                    <i class="bi bi-stop-circle me-1"></i>Expired
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-info" title="Started @flag.StartTime.Value.ToString("MMM d, yyyy h:mm tt") UTC">
+                                                                    <i class="bi bi-play-circle me-1"></i>Running
+                                                                </span>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-primary" title="Time-based activation enabled">
+                                                                <i class="bi bi-calendar me-1"></i>Configured
+                                                            </span>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted" title="No time-based scheduling">
+                                                        <i class="bi bi-dash-circle"></i>
+                                                    </span>
+                                                }
+                                            </td>
                                             <td>
                                                 <span class="text-muted small">
                                                     <i class="bi bi-clock me-1"></i>@flag.UpdatedAt.ToString("MMM d, yyyy h:mm tt")
                                                 </span>
                                             </td>
                                             <td class="text-end pe-4">
-                                                <button class="btn btn-sm btn-outline-primary edit-flag" 
+                                                <button class="btn btn-sm btn-outline-primary edit-flag me-2" 
                                                         data-flag-id="@flag.Id"
                                                         data-bs-toggle="modal" 
-                                                        data-bs-target="#editFlagModal">
+                                                        data-bs-target="#editFlagModal"
+                                                        title="Edit flag">
                                                     <i class="bi bi-pencil me-1"></i>Edit
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger delete-flag" 
+                                                        data-flag-name="@flag.Name"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteFlagModal"
+                                                        title="Delete flag">
+                                                    <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </td>
                                         </tr>
@@ -243,6 +301,48 @@
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="updateFlag">
                     <i class="bi bi-check2 me-1"></i>Update Flag
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Flag Modal -->
+<div class="modal fade" id="deleteFlagModal" tabindex="-1" aria-labelledby="deleteFlagModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0">
+            <div class="modal-header bg-danger bg-opacity-10 border-danger">
+                <h5 class="modal-title text-danger" id="deleteFlagModalLabel">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Delete Feature Flag
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-danger">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Warning: This action cannot be undone
+                    </h6>
+                    <p class="mb-0">Deleting this feature flag will permanently remove it and all associated data, including:</p>
+                    <ul class="mt-2 mb-0">
+                        <li>All targeting rules and rule groups</li>
+                        <li>Time-based scheduling configurations</li>
+                        <li>Usage history and analytics</li>
+                    </ul>
+                </div>
+                
+                <p class="mb-3">Are you sure you want to delete the feature flag <strong id="deleteFlagName" class="text-danger"></strong>?</p>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="confirmDelete">
+                    <label class="form-check-label" for="confirmDelete">
+                        I understand that this action cannot be undone
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteFlag" disabled>
+                    <i class="bi bi-trash me-1"></i>Delete Feature Flag
                 </button>
             </div>
         </div>
@@ -382,17 +482,7 @@
                     return;
                 }
                 
-                // Save new flag
-                console.log('Submitting flag data:', {
-                    name,
-                    description,
-                    isEnabled,
-                    rolloutPercentage,
-                    environment
-                });
-                
                 var token = $('input:hidden[name="__RequestVerificationToken"]').val();
-                console.log('Token:', token);
                 
                 $.ajax({
                     url: '?handler=CreateFlag',
@@ -410,7 +500,6 @@
                         'X-CSRF-TOKEN': token
                     },
                     success: function(response) {
-                        console.log('Success response:', response);
                         showToast(`Feature flag "${name}" created successfully`);
                         
                         // Dismiss modal before reloading
@@ -420,9 +509,6 @@
                         setTimeout(() => {
                             location.reload();
                         }, 1000);
-                    },
-                    complete: function(xhr, status) {
-                        console.log('AJAX complete - Status:', status, 'Response:', xhr.responseText);
                     },
                     error: function(xhr, status, error) {
                         console.error('Error creating flag:', { status: status, error: error, response: xhr.responseText, xhr: xhr });
@@ -564,6 +650,69 @@
                     }
                 });
             }
+            
+            // Delete flag modal
+            $('.delete-flag').on('click', function() {
+                const flagName = $(this).data('flag-name');
+                $('#deleteFlagName').text(flagName);
+                $('#confirmDelete').prop('checked', false);
+                $('#confirmDeleteFlag').prop('disabled', true);
+            });
+            
+            // Enable/disable delete button based on confirmation checkbox
+            $('#confirmDelete').on('change', function() {
+                $('#confirmDeleteFlag').prop('disabled', !$(this).prop('checked'));
+            });
+            
+            // Reset delete modal when closed
+            $('#deleteFlagModal').on('hidden.bs.modal', function() {
+                $('#confirmDelete').prop('checked', false);
+                $('#confirmDeleteFlag').prop('disabled', true);
+            });
+            
+            // Confirm delete flag
+            $('#confirmDeleteFlag').on('click', function() {
+                const flagName = $('#deleteFlagName').text();
+                
+                if (!flagName) {
+                    showToast('Error: No flag selected for deletion', 'error');
+                    return;
+                }
+                
+                // Disable button to prevent double-clicks
+                $(this).prop('disabled', true);
+                
+                $.ajax({
+                    url: '?handler=DeleteFlag',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        name: flagName
+                    }),
+                    headers: {
+                        'RequestVerificationToken': $('input:hidden[name="__RequestVerificationToken"]').val(),
+                        'X-CSRF-TOKEN': $('input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function(response) {
+                        showToast(`Feature flag "${flagName}" deleted successfully`);
+                        
+                        // Dismiss modal before reloading
+                        $('#deleteFlagModal').modal('hide');
+                        
+                        // Reload page with a slight delay to show toast
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error deleting flag:', xhr.responseText);
+                        showToast('Error deleting flag: ' + (xhr.responseText || error || 'Unknown error occurred'), 'error');
+                        
+                        // Re-enable button
+                        $('#confirmDeleteFlag').prop('disabled', false);
+                    }
+                });
+            });
         });
     </script>
 }

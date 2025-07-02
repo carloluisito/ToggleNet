@@ -122,7 +122,6 @@ namespace ToggleNet.Dashboard.Pages
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error creating feature flag: {ex}");
                 return BadRequest($"Error creating feature flag: {ex.Message}");
             }
         }
@@ -152,6 +151,33 @@ namespace ToggleNet.Dashboard.Pages
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+        
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> OnPostDeleteFlag([FromBody] DeleteFlagRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return BadRequest("Feature flag name is required");
+                }
+
+                // Check if flag exists
+                var existingFlags = await _flagManager.GetAllFlagsAsync();
+                if (!existingFlags.Any(f => f.Name.Equals(request.Name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return NotFound($"Feature flag '{request.Name}' not found");
+                }
+
+                await _flagManager.DeleteFlagAsync(request.Name);
+                
+                return new OkObjectResult(new { success = true, message = "Feature flag deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error deleting feature flag: {ex.Message}");
             }
         }
     }
@@ -185,5 +211,10 @@ namespace ToggleNet.Dashboard.Pages
         public bool IsEnabled { get; set; }
         public int RolloutPercentage { get; set; }
         public string Environment { get; set; } = string.Empty;
+    }
+    
+    public class DeleteFlagRequest
+    {
+        public string Name { get; set; } = string.Empty;
     }
 }

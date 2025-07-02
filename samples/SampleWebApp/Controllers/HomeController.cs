@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,6 +37,28 @@ namespace SampleWebApp.Controllers
             // Get the state of all feature flags for the current user
             var enabledFlags = await _featureFlagManager.GetEnabledFlagsForUserAsync(userId);
             
+            // Get all flags for detailed display
+            var allFlags = await _featureFlagManager.GetAllFlagsAsync();
+            var flagInfos = new List<FeatureFlagInfo>();
+            
+            foreach (var flag in allFlags)
+            {
+                var isEnabledForUser = await _featureFlagManager.IsEnabledAsync(flag.Name, userId);
+                
+                flagInfos.Add(new FeatureFlagInfo
+                {
+                    Name = flag.Name,
+                    Description = flag.Description,
+                    IsEnabled = flag.IsEnabled,
+                    IsEnabledForUser = isEnabledForUser,
+                    UseTargetingRules = flag.UseTargetingRules,
+                    UseTimeBasedActivation = flag.UseTimeBasedActivation,
+                    RolloutPercentage = flag.RolloutPercentage,
+                    TimeZone = flag.TimeZone ?? "UTC",
+                    IsTimeActive = flag.IsTimeActive()
+                });
+            }
+            
             // Create a view model with the feature flags - this will automatically track usage
             var model = new HomeViewModel
             {
@@ -43,7 +66,8 @@ namespace SampleWebApp.Controllers
                 NewDashboardEnabled = await _featureFlagManager.IsEnabledAsync("new-dashboard", userId),
                 BetaFeaturesEnabled = await _featureFlagManager.IsEnabledAsync("beta-features", userId),
                 DarkModeEnabled = await _featureFlagManager.IsEnabledAsync("dark-mode", userId),
-                EnabledFlags = enabledFlags
+                EnabledFlags = enabledFlags,
+                AllFlags = flagInfos
             };
 
             return View(model);

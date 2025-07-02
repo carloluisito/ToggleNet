@@ -21,6 +21,7 @@ Tests are also run automatically in CI before NuGet deployment.
 - Percentage-based rollout support
 - User-specific feature flag evaluation
 - **Advanced Targeting Rules Engine** for sophisticated user targeting
+- **Time-Based Scheduling** for automated feature flag activation and deactivation
 - Embedded dashboard for managing feature flags (requires .NET 9.0+)
 - Secure dashboard access with authentication
 - Feature usage analytics and tracking
@@ -291,6 +292,116 @@ public class CheckoutController : Controller
 - **Built-in analytics** to measure conversion rates and user engagement
 - **Gradual rollouts** - start small and increase percentage over time
 
+### Time-Based Scheduling
+
+ToggleNet includes comprehensive time-based scheduling capabilities for automated feature flag management:
+
+```csharp
+public class ScheduledFeatureService
+{
+    private readonly IFeatureFlagScheduler _scheduler;
+
+    public ScheduledFeatureService(IFeatureFlagScheduler scheduler)
+    {
+        _scheduler = scheduler;
+    }
+
+    public async Task ScheduleFeatureLaunch()
+    {
+        // Schedule activation at a specific time with optional duration
+        await _scheduler.ScheduleActivationAsync(
+            "new-product-launch", 
+            new DateTime(2025, 12, 1, 9, 0, 0), // December 1st, 9:00 AM
+            TimeSpan.FromDays(30), // Active for 30 days
+            "America/New_York" // Optional timezone
+        );
+
+        // Schedule deactivation at a specific time
+        await _scheduler.ScheduleDeactivationAsync(
+            "maintenance-mode",
+            new DateTime(2025, 7, 15, 2, 0, 0) // July 15th, 2:00 AM
+        );
+
+        // Schedule temporary activation (starts immediately)
+        await _scheduler.ScheduleTemporaryActivationAsync(
+            "flash-sale",
+            TimeSpan.FromHours(24) // Active for 24 hours
+        );
+
+        // Remove scheduling from a feature
+        await _scheduler.RemoveSchedulingAsync("temporary-feature");
+
+        // Get upcoming scheduled changes
+        var upcomingChanges = await _scheduler.GetUpcomingChangesAsync(168); // Next 7 days
+    }
+}
+```
+
+**Time-Based Scheduling Features:**
+- **Scheduled Activation**: Automatically enable features at specific dates and times
+- **Scheduled Deactivation**: Automatically disable features at predetermined times
+- **Duration-Based Scheduling**: Set features to be active for specific time periods
+- **Temporary Activation**: Instantly activate features for a limited duration
+- **Timezone Support**: Schedule features in different timezones (UTC, Eastern, Pacific, etc.)
+- **Flexible Duration**: Support for hours, days, and months with accurate calendar calculations
+- **Dashboard Management**: User-friendly interface for scheduling without code
+- **Upcoming Changes View**: See all scheduled feature changes in advance
+- **Time Display**: Shows times in both local and UTC formats for clarity
+
+#### Scheduling Dashboard
+
+The scheduling dashboard (`/feature-flags/scheduling`) provides an intuitive interface for managing time-based feature flags:
+
+- **Schedule Activation**: Set start times with optional duration and timezone selection
+- **Schedule Deactivation**: Set specific end times for feature flags
+- **Temporary Activation**: Quickly activate features for a specified duration starting immediately
+- **Visual Scheduling Overview**: See upcoming changes and currently scheduled flags
+- **Time Zone Support**: Choose from common timezones or use UTC
+- **Flexible Duration Input**: Specify duration in hours, days, and months with accurate calendar math
+- **Real-time Time Display**: Shows scheduled times in both local time and UTC
+- **Edit Scheduling**: Modify existing schedules directly from the dashboard
+
+#### Scheduling Use Cases
+
+**Product Launches:**
+```csharp
+// Launch new feature on Black Friday at 12:01 AM EST
+await _scheduler.ScheduleActivationAsync(
+    "black-friday-deals", 
+    new DateTime(2025, 11, 29, 0, 1, 0),
+    TimeSpan.FromDays(4), // Active through Cyber Monday
+    "America/New_York"
+);
+```
+
+**Maintenance Windows:**
+```csharp
+// Activate maintenance mode for 2 hours starting at 2 AM
+await _scheduler.ScheduleActivationAsync(
+    "maintenance-mode",
+    new DateTime(2025, 7, 15, 2, 0, 0),
+    TimeSpan.FromHours(2)
+);
+```
+
+**Flash Sales:**
+```csharp
+// Start flash sale immediately for 6 hours
+await _scheduler.ScheduleTemporaryActivationAsync(
+    "flash-sale-banner",
+    TimeSpan.FromHours(6)
+);
+```
+
+**Regional Rollouts:**
+```csharp
+// Launch feature in different timezones
+await _scheduler.ScheduleActivationAsync("new-feature", 
+    new DateTime(2025, 8, 1, 9, 0, 0), null, "America/Los_Angeles");
+await _scheduler.ScheduleActivationAsync("new-feature", 
+    new DateTime(2025, 8, 1, 9, 0, 0), null, "America/New_York");
+```
+
 ## Custom Feature Store
 
 You can implement your own feature store by implementing the `IFeatureStore` interface:
@@ -304,6 +415,50 @@ public class MyCustomFeatureStore : IFeatureStore
 // Register in DI
 services.AddFeatureFlagServices<MyCustomFeatureStore>("Development");
 ```
+
+## Visual Guide
+
+Get a comprehensive overview of ToggleNet's dashboard and features through these screenshots:
+
+### Dashboard Overview
+![Dashboard Overview](docs/images/dashboard-overview.png)
+*Main dashboard showing all feature flags with their current status, rollout percentages, and scheduling information*
+
+### Creating a Feature Flag
+![Create Feature Flag](docs/images/create-feature-flag.png)
+*Simple form to create a new feature flag with name, description, and initial settings*
+
+### Feature Flag Settings
+![Feature Flag Settings](docs/images/feature-flag-settings.png)
+*Detailed view of a feature flag showing enabled/disabled state, rollout percentage, and quick actions*
+
+### Targeting Rules Configuration
+![Targeting Rules](docs/images/targeting-rules.png)
+*Advanced targeting rules interface with attribute-based conditions, operators, and rule groups*
+
+### Time-Based Scheduling
+![Scheduling Interface](docs/images/scheduling-interface.png)
+*Scheduling panel for automated feature flag activation/deactivation with timezone support*
+
+### Schedule Activation
+![Schedule Activation](docs/images/schedule-activation.png)
+*Form to schedule a feature flag activation with start time, duration, and timezone selection*
+
+### Schedule Deactivation
+![Schedule Deactivation](docs/images/schedule-deactivation.png)
+*Interface to schedule automatic feature flag deactivation at a specific time*
+
+### Temporary Activation
+![Temporary Activation](docs/images/temporary-activation.png)
+*Quick temporary activation with predefined duration options (1 hour, 1 day, 1 week, etc.)*
+
+### User-Specific Dashboard
+![User Dashboard](docs/images/user-dashboard.png)
+*Personalized view showing feature flag status for a specific user based on targeting rules*
+
+### Authentication
+![Dashboard Login](docs/images/dashboard-login.png)
+*Secure login interface for dashboard access with configurable user credentials*
 
 ## Dashboard
 
@@ -323,6 +478,15 @@ The dashboard provides multiple pages:
   * Per-rule group rollout percentages
   * Contextual notifications for save operations and errors
   * Test results history with chronological display
+* **Scheduling**: Time-based feature flag management and automation
+  * Schedule feature activation with optional duration and timezone support
+  * Schedule feature deactivation at specific times
+  * Temporary activation for immediate, time-limited feature enabling
+  * Visual upcoming changes overview showing all scheduled modifications
+  * All scheduled flags table with status indicators and time displays
+  * Intuitive duration input with support for hours, days, and months
+  * Accurate calendar-based month calculations for precise scheduling
+  * Local time and UTC display for clear time zone handling
 * **Analytics**: View usage statistics, trends, and individual usage events
   * Filter by time period (7, 30, or 90 days)
   * View unique user counts and total usage metrics
@@ -368,11 +532,15 @@ The sample application includes a `TargetingExampleController` that demonstrates
 - **Beta testing programs** with version-specific targeting
 - **Regional compliance** features based on geographic location
 
-## Recent Updates - Targeting Rules Engine
+## Recent Updates - Targeting Rules Engine & Time-Based Scheduling
 
-ToggleNet now includes a powerful **Targeting Rules Engine** that provides sophisticated user targeting capabilities beyond simple percentage rollouts:
+ToggleNet now includes two powerful new capabilities that significantly enhance feature flag management:
 
-### Key Features Added:
+### 🎯 Targeting Rules Engine
+
+A sophisticated **Targeting Rules Engine** that provides advanced user targeting capabilities beyond simple percentage rollouts:
+
+#### Key Features Added:
 - **User Context System**: Rich user attribute support for targeting decisions
 - **Flexible Rule Operations**: 15+ operators including string, numeric, date, and version comparisons
 - **Rule Groups**: Combine multiple rules with AND/OR logic
@@ -381,8 +549,23 @@ ToggleNet now includes a powerful **Targeting Rules Engine** that provides sophi
 - **Database Support**: Full Entity Framework Core integration
 - **Backward Compatibility**: Existing percentage-based flags continue to work
 
-### Quick Start with Targeting Rules:
+### ⏰ Time-Based Scheduling
 
+Comprehensive **Time-Based Scheduling** system for automated feature flag lifecycle management:
+
+#### Key Features Added:
+- **Scheduled Activation**: Automatically enable features at specific dates and times
+- **Scheduled Deactivation**: Automatically disable features at predetermined times
+- **Duration-Based Scheduling**: Set features to be active for specific time periods
+- **Temporary Activation**: Instantly activate features for a limited duration
+- **Timezone Support**: Schedule features in different timezones with accurate conversion
+- **Calendar-Accurate Duration**: Precise month/day/hour calculations respecting calendar boundaries
+- **Dashboard Integration**: User-friendly scheduling interface with visual upcoming changes
+- **Flexible Time Display**: Shows times in both local and UTC formats for clarity
+
+### Quick Start with New Features:
+
+#### Targeting Rules:
 ```csharp
 // Create user context with targeting attributes
 var userContext = new UserContext
@@ -400,6 +583,23 @@ var userContext = new UserContext
 bool isEnabled = await _featureFlagManager.IsEnabledAsync("premium-features", userContext);
 ```
 
+#### Time-Based Scheduling:
+```csharp
+// Schedule feature for Black Friday launch
+await _scheduler.ScheduleActivationAsync(
+    "black-friday-deals", 
+    new DateTime(2025, 11, 29, 0, 1, 0),
+    TimeSpan.FromDays(4), // Active through Cyber Monday
+    "America/New_York"
+);
+
+// Temporary flash sale starting now
+await _scheduler.ScheduleTemporaryActivationAsync(
+    "flash-sale",
+    TimeSpan.FromHours(6)
+);
+```
+
 ### Targeting Rules Dashboard:
 
 The new Targeting Rules dashboard (`/feature-flags/targeting-rules`) provides a user-friendly interface for configuring complex targeting scenarios:
@@ -412,6 +612,19 @@ The new Targeting Rules dashboard (`/feature-flags/targeting-rules`) provides a 
 - **Common Attributes**: Pre-populated suggestions for common user attributes like country, plan, device type, etc.
 - **Real-time Notifications**: Immediate feedback for save operations and test results
 - **Detailed Test Results**: Comprehensive evaluation details showing which rules matched and why
+
+### Scheduling Dashboard:
+
+The new Scheduling dashboard (`/feature-flags/scheduling`) provides comprehensive time-based feature flag management:
+
+- **Visual Timeline**: See upcoming scheduled changes at a glance
+- **Flexible Scheduling Options**: Activation, deactivation, and temporary activation modes
+- **Timezone Support**: Choose from common timezones or use UTC with automatic conversion
+- **Duration Builder**: Intuitive interface for setting hours, days, and months
+- **Calendar Accuracy**: Precise month calculations that respect actual calendar boundaries
+- **Real-time Preview**: See exactly when features will activate/deactivate in your local time
+- **Bulk Management**: View and manage all scheduled flags in one place
+- **Status Indicators**: Visual status badges showing active, scheduled, and inactive states
 
 ### Targeting Rules Logic:
 

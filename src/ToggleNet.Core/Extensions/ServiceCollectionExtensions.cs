@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using ToggleNet.Core.Scheduling;
 using ToggleNet.Core.Storage;
 using ToggleNet.Core.Targeting;
 
@@ -27,6 +28,10 @@ namespace ToggleNet.Core.Extensions
                 throw new ArgumentNullException(nameof(environment));
 
             services.AddSingleton<ITargetingRulesEngine, TargetingRulesEngine>();
+            services.AddSingleton<IFeatureFlagScheduler>(provider =>
+                new FeatureFlagScheduler(
+                    provider.GetRequiredService<IFeatureStore>(),
+                    environment));
             services.AddSingleton(provider => 
                 new FeatureFlagManager(
                     provider.GetRequiredService<IFeatureStore>(),
@@ -58,6 +63,10 @@ namespace ToggleNet.Core.Extensions
                 
             services.Add(new ServiceDescriptor(typeof(IFeatureStore), typeof(TFeatureStore), lifetime));
             services.AddSingleton<ITargetingRulesEngine, TargetingRulesEngine>();
+            services.AddSingleton<IFeatureFlagScheduler>(provider =>
+                new FeatureFlagScheduler(
+                    provider.GetRequiredService<IFeatureStore>(),
+                    environment));
             services.AddSingleton(provider => 
                 new FeatureFlagManager(
                     provider.GetRequiredService<IFeatureStore>(),
@@ -91,6 +100,10 @@ namespace ToggleNet.Core.Extensions
                 
             services.Add(new ServiceDescriptor(typeof(IFeatureStore), typeof(TFeatureStore), lifetime));
             services.Add(new ServiceDescriptor(typeof(ITargetingRulesEngine), typeof(TTargetingRulesEngine), lifetime));
+            services.AddSingleton<IFeatureFlagScheduler>(provider =>
+                new FeatureFlagScheduler(
+                    provider.GetRequiredService<IFeatureStore>(),
+                    environment));
             services.AddSingleton(provider => 
                 new FeatureFlagManager(
                     provider.GetRequiredService<IFeatureStore>(),

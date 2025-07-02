@@ -32,6 +32,13 @@ namespace ToggleNet.Core.Storage
         Task SetFlagAsync(FeatureFlag flag);
         
         /// <summary>
+        /// Deletes a feature flag by name
+        /// </summary>
+        /// <param name="featureName">The name of the feature flag to delete</param>
+        /// <param name="environment">The environment</param>
+        Task DeleteFlagAsync(string featureName, string environment);
+        
+        /// <summary>
         /// Retrieves all feature flags for an environment
         /// </summary>
         /// <param name="environment">The environment to filter flags by</param>

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ToggleNet.Core;
 using ToggleNet.Core.Entities;
 using ToggleNet.Core.Storage;
+using ToggleNet.Core.Targeting;
 
 namespace ToggleNet.EntityFrameworkCore
 {
@@ -58,6 +59,8 @@ namespace ToggleNet.EntityFrameworkCore
 
             var flags = await _context.FeatureFlags
                 .AsNoTracking()
+                .Include(f => f.TargetingRuleGroups)
+                    .ThenInclude(rg => rg.Rules)
                 .Where(f => f.Environment == environment)
                 .ToListAsync();
 
@@ -65,9 +68,27 @@ namespace ToggleNet.EntityFrameworkCore
 
             foreach (var flag in flags)
             {
-                bool isEnabled = flag.IsEnabled && 
-                                (flag.RolloutPercentage >= 100 || 
-                                 FeatureEvaluator.IsInRolloutPercentage(userId, flag.Name, flag.RolloutPercentage));
+                // First check if flag is enabled and time-active
+                bool isEnabled = flag.IsEnabled && flag.IsTimeActive();
+                
+                if (isEnabled)
+                {
+                    // If using targeting rules, evaluate them
+                    if (flag.UseTargetingRules && flag.TargetingRuleGroups.Any())
+                    {
+                        var userContext = new UserContext { UserId = userId };
+                        var targetingEngine = new TargetingRulesEngine();
+                        isEnabled = await targetingEngine.EvaluateAsync(flag, userContext);
+                    }
+                    else
+                    {
+                        // Fall back to percentage rollout
+                        if (flag.RolloutPercentage < 100)
+                        {
+                            isEnabled = FeatureEvaluator.IsInRolloutPercentage(userId, flag.Name, flag.RolloutPercentage);
+                        }
+                    }
+                }
                 
                 result[flag.Name] = isEnabled;
             }
@@ -102,9 +123,61 @@ namespace ToggleNet.EntityFrameworkCore
                 existingFlag.RolloutPercentage = flag.RolloutPercentage;
                 existingFlag.Environment = flag.Environment;
                 existingFlag.UpdatedAt = flag.UpdatedAt;
+
+                // Update time-based scheduling properties
+                existingFlag.UseTimeBasedActivation = flag.UseTimeBasedActivation;
+                existingFlag.StartTime = flag.StartTime;
+                existingFlag.EndTime = flag.EndTime;
+                existingFlag.Duration = flag.Duration;
+                existingFlag.TimeZone = flag.TimeZone;
+
+                // Update targeting properties
+                existingFlag.UseTargetingRules = flag.UseTargetingRules;
+                
+                _context.FeatureFlags.Update(existingFlag);
             }
 
             await _context.SaveChangesAsync();
+        }
+        
+        /// <summary>
+        /// Deletes a feature flag by name
+        /// </summary>
+        /// <param name="featureName">The name of the feature flag to delete</param>
+        /// <param name="environment">The environment</param>
+        public async Task DeleteFlagAsync(string featureName, string environment)
+        {
+            if (string.IsNullOrEmpty(featureName))
+                throw new ArgumentNullException(nameof(featureName));
+
+            if (string.IsNullOrEmpty(environment))
+                throw new ArgumentNullException(nameof(environment));
+
+            var flag = await _context.FeatureFlags
+                .Include(f => f.TargetingRuleGroups)
+                    .ThenInclude(g => g.Rules)
+                .FirstOrDefaultAsync(f => f.Name == featureName && f.Environment == environment);
+
+            if (flag != null)
+            {
+                // Remove all associated targeting rule groups and rules (cascade delete)
+                if (flag.TargetingRuleGroups?.Any() == true)
+                {
+                    foreach (var ruleGroup in flag.TargetingRuleGroups)
+                    {
+                        if (ruleGroup.Rules?.Any() == true)
+                        {
+                            _context.TargetingRules.RemoveRange(ruleGroup.Rules);
+                        }
+                    }
+                    _context.TargetingRuleGroups.RemoveRange(flag.TargetingRuleGroups);
+                }
+
+                // Remove the feature flag itself
+                _context.FeatureFlags.Remove(flag);
+                
+                await _context.SaveChangesAsync();
+            }
         }
         
         /// <summary>
