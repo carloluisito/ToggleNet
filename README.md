@@ -22,6 +22,7 @@ Tests are also run automatically in CI before NuGet deployment.
 - User-specific feature flag evaluation
 - **Advanced Targeting Rules Engine** for sophisticated user targeting
 - **Time-Based Scheduling** for automated feature flag activation and deactivation
+- **Subscription Entitlements Integration** with Stripe and Paddle support
 - Embedded dashboard for managing feature flags (requires .NET 9.0+)
 - Secure dashboard access with authentication
 - Feature usage analytics and tracking
@@ -32,6 +33,9 @@ Tests are also run automatically in CI before NuGet deployment.
 - **ToggleNet.Core**: Core functionality and interfaces
 - **ToggleNet.EntityFrameworkCore**: EF Core implementation for PostgreSQL and SQL Server
 - **ToggleNet.Dashboard**: ASP.NET Core Razor Pages dashboard
+- **ToggleNet.Entitlements.Abstractions**: Provider-neutral subscription entitlements interfaces
+- **ToggleNet.Entitlements.Stripe**: Stripe integration for subscription entitlements
+- **ToggleNet.Entitlements.Paddle**: Paddle integration for subscription entitlements
 
 ## Getting Started
 
@@ -43,6 +47,11 @@ Tests are also run automatically in CI before NuGet deployment.
 dotnet add package ToggleNet.Core
 dotnet add package ToggleNet.EntityFrameworkCore
 dotnet add package ToggleNet.Dashboard
+
+# Optional: For subscription entitlements
+dotnet add package ToggleNet.Entitlements.Abstractions
+dotnet add package ToggleNet.Entitlements.Stripe
+dotnet add package ToggleNet.Entitlements.Paddle
 ```
 
 ### Configuration
@@ -655,6 +664,194 @@ Example targeting scenarios you can configure through the dashboard:
 - **Device-Specific**: Target users with `deviceType = "mobile"` AND `osVersion >= "iOS 15"`
 
 This implementation provides enterprise-grade feature flag management with the flexibility to target users based on any combination of attributes while maintaining high performance and reliability.
+
+## Subscription Entitlements
+
+ToggleNet includes comprehensive subscription entitlements support that allows you to gate features based on user subscription plans and billing provider status. This enables SaaS applications to control feature access based on what users have paid for.
+
+### Key Features
+
+- **Provider-Agnostic Architecture**: Clean separation between entitlements logic and billing providers
+- **Multi-Provider Support**: Built-in integrations for Stripe and Paddle with extensible architecture
+- **Webhook Integration**: Real-time subscription status updates via provider webhooks
+- **Feature Gate Composition**: Seamlessly combines feature flags with subscription entitlements
+- **Multi-Tenant Support**: Tenant-specific webhook secrets and plan configurations
+- **In-Memory Testing**: Built-in implementations for development and testing
+
+### Quick Start
+
+#### 1. Basic Setup
+
+```csharp
+using ToggleNet.Core.Extensions;
+using ToggleNet.Entitlements.Abstractions;
+using ToggleNet.Entitlements.Stripe;
+
+// Register entitlements services
+services.AddSingleton<ISubscriptionSnapshotStore, InMemorySubscriptionSnapshotStore>();
+services.AddSingleton<IPlanFeatureMapStore, InMemoryPlanFeatureMapStore>();
+services.AddSingleton<IEntitlementService, EntitlementService>();
+
+// Register Stripe integration
+services.AddSingleton<IStripeTenantSecretStore, InMemoryStripeTenantSecretStore>();
+services.AddSingleton<IStripeWebhookService, StripeWebhookService>();
+
+// Register the composed FeatureGate
+services.AddSingleton<IFeatureGate, FeatureGate>();
+```
+
+#### 2. Using Feature Gates
+
+```csharp
+public class PremiumController : Controller
+{
+    private readonly IFeatureGate _featureGate;
+
+    public PremiumController(IFeatureGate featureGate)
+    {
+        _featureGate = featureGate;
+    }
+
+    public async Task<IActionResult> AdvancedAnalytics()
+    {
+        // Check both feature flag AND subscription entitlements
+        bool hasAccess = await _featureGate.IsEnabledAsync(
+            "advanced-analytics", 
+            User.Identity.Name
+        );
+
+        if (!hasAccess)
+        {
+            return View("UpgradeRequired");
+        }
+
+        return View("AdvancedAnalytics");
+    }
+}
+```
+
+#### 3. Webhook Integration
+
+```csharp
+[ApiController]
+[Route("api/webhooks")]
+public class WebhookController : ControllerBase
+{
+    private readonly IStripeWebhookService _stripeWebhook;
+
+    public WebhookController(IStripeWebhookService stripeWebhook)
+    {
+        _stripeWebhook = stripeWebhook;
+    }
+
+    [HttpPost("stripe/{tenantId}")]
+    public async Task<IActionResult> StripeWebhook(string tenantId)
+    {
+        var json = await new StreamReader(Request.Body).ReadToEndAsync();
+        var signature = Request.Headers["Stripe-Signature"];
+
+        // Verify webhook authenticity
+        bool isValid = await _stripeWebhook.VerifyAsync(tenantId, json, signature);
+        if (!isValid)
+        {
+            return BadRequest("Invalid signature");
+        }
+
+        // Process subscription changes
+        await _stripeWebhook.HandleAsync(tenantId, json, customerId => 
+        {
+            // Map Stripe customer ID to your user ID
+            return GetUserIdFromCustomerId(customerId);
+        });
+
+        return Ok();
+    }
+}
+```
+
+### Architecture
+
+The entitlements system follows a clean architecture pattern:
+
+- **Core Interfaces**: `IEntitlementService`, `IFeatureGate` in ToggleNet.Core
+- **Abstractions Layer**: Provider-neutral ports and default implementations
+- **Provider Adapters**: Stripe and Paddle specific webhook handling and API integration
+- **Composition**: `FeatureGate` combines flag evaluation with entitlement checks
+
+### Subscription Models
+
+```csharp
+// Subscription snapshot - current state
+public record SubscriptionSnapshot(
+    string TenantId,
+    string UserId,
+    string Provider,        // "stripe", "paddle", etc.
+    string PlanId,         // Provider's plan/price ID
+    string Status,         // "active", "canceled", "past_due", etc.
+    DateTimeOffset CurrentPeriodEnd,
+    int? Quantity = null
+);
+
+// Plan feature mapping - what features each plan includes
+public record PlanFeatureMap(
+    string TenantId,
+    string PlanId,
+    HashSet<string> Features
+);
+
+// User entitlements - computed from subscription + plan
+public record Entitlements(
+    string UserId,
+    string? PlanId,
+    string? Status,
+    HashSet<string> Features,
+    DateTimeOffset? CurrentPeriodEnd = null
+);
+```
+
+### Multi-Tenant Configuration
+
+```csharp
+// Configure tenant-specific settings
+var secretStore = serviceProvider.GetService<IStripeTenantSecretStore>();
+await secretStore.UpsertAsync(new StripeTenantSecrets(
+    TenantId: "tenant-1",
+    WebhookSigningSecret: "whsec_...",
+    RestrictedApiKey: "rk_live_..." // Optional for API calls
+));
+
+var planStore = serviceProvider.GetService<IPlanFeatureMapStore>();
+await planStore.UpsertAsync(new PlanFeatureMap(
+    TenantId: "tenant-1",
+    PlanId: "price_premium_monthly",
+    Features: new HashSet<string> { "advanced-analytics", "priority-support", "api-access" }
+));
+```
+
+### Provider Support
+
+#### Stripe Integration
+- **Webhook Verification**: Uses official Stripe SDK for signature validation
+- **Event Handling**: Processes subscription lifecycle events (created, updated, canceled)
+- **Invoice Events**: Handles payment failures and past due status
+- **Customer Mapping**: Flexible customer ID to user ID resolution
+
+#### Paddle Integration
+- **Webhook Framework**: Skeleton implementation ready for HMAC/public key verification
+- **Event Structure**: Prepared for Paddle's webhook event format
+- **Extensible**: Easy to complete with actual Paddle API integration
+
+### Sample Application
+
+Check out `samples/EntitlementsSample` for a complete working example that demonstrates:
+
+- Service registration and DI configuration
+- Feature gate usage in controllers
+- Webhook endpoint setup
+- In-memory stores for quick testing
+- Multi-tenant configuration examples
+
+The sample shows how to build a SaaS application where premium features are gated behind subscription plans, with real-time updates via billing provider webhooks.
 
 ## Database Setup
 
