@@ -15,13 +15,11 @@ namespace SampleWebApp.Services
     public class FeatureFlagSeeder
     {
         private readonly IFeatureStore _featureStore;
-        private readonly string _environment;
         private readonly ILogger<FeatureFlagSeeder> _logger;
 
         public FeatureFlagSeeder(IFeatureStore featureStore, ILogger<FeatureFlagSeeder> logger)
         {
             _featureStore = featureStore;
-            _environment = "Development"; // Default environment for samples
             _logger = logger;
         }
 
