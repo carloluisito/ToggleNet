@@ -1,0 +1,74 @@
+name: Release (NuGet + GitHub)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  pack-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            9.0.x
+            6.0.x
+
+      - name: NuGet Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.sln', '**/*.csproj', '**/packages.lock.json') }}
+
+      - name: Extract Version from Tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore /warnaserror
+
+      - name: Pack (all)
+        run: |
+          mkdir -p ./nupkgs
+          common="/p:Version=${{ steps.ver.outputs.version }} /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg /p:ContinuousIntegrationBuild=true /p:EmbedUntrackedSources=true /p:Deterministic=true"
+          dotnet pack src/ToggleNet.Core/ToggleNet.Core.csproj -c Release -o ./nupkgs $common
+          dotnet pack src/ToggleNet.EntityFrameworkCore/ToggleNet.EntityFrameworkCore.csproj -c Release -o ./nupkgs $common
+          dotnet pack src/ToggleNet.Dashboard/ToggleNet.Dashboard.csproj -c Release -o ./nupkgs $common
+          dotnet pack src/ToggleNet.Entitlements.Abstractions/ToggleNet.Entitlements.Abstractions.csproj -c Release -o ./nupkgs $common
+          dotnet pack src/ToggleNet.Entitlements.Stripe/ToggleNet.Entitlements.Stripe.csproj -c Release -o ./nupkgs $common
+          dotnet pack src/ToggleNet.Entitlements.Paddle/ToggleNet.Entitlements.Paddle.csproj -c Release -o ./nupkgs $common
+
+      - name: List packages
+        run: ls -la ./nupkgs
+
+      - name: Publish to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          for pkg in ./nupkgs/*.nupkg; do
+            dotnet nuget push "$pkg" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+          for snu in ./nupkgs/*.snupkg; do
+            dotnet nuget push "$snu" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            ./nupkgs/*.nupkg
+            ./nupkgs/*.snupkg
