@@ -1,7 +1,7 @@
 ToggleNet --- .NET Feature Flags, A/B Testing, and Scheduling (Open Source)
 =========================================================================
 
-![Build Status](https://github.com/carloluisito/ToggleNet/actions/workflows/nuget-publish.yml/badge.svg?branch=main)\
+[![CI (Build & Test)](https://github.com/carloluisito/ToggleNet/actions/workflows/ci.yml/badge.svg)](https://github.com/carloluisito/ToggleNet/actions/workflows/ci.yml)
 [](#license)
 
 [](#license)
