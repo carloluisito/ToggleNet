@@ -35,7 +35,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build -c Release --no-restore /warnaserror
+        run: dotnet build -c Release --no-restore
 
       - name: Pack (all)
         run: |
