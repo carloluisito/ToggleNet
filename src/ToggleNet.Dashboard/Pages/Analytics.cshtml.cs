@@ -29,7 +29,7 @@ namespace ToggleNet.Dashboard.Pages
         }
 
         [BindProperty(SupportsGet = true)]
-        public int Timeframe { get; set; } = 7; // Default to 7 days
+        public int Timeframe { get; set; } = 7;
         
         public string SelectedTimeframe => Timeframe switch
         {
