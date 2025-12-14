@@ -1,0 +1,142 @@
+version: 1
+
+# Enforced mode: blocks merges when policies fail
+mode: enforced
+
+# Emergency bypass for production hotfixes
+bypass:
+  label: "mergeguard:override"
+
+rules:
+  # Core library changes - the heart of the feature flag system
+  - name: "Core Library Changes"
+    paths:
+      include:
+        - "src/ToggleNet.Core/**/*.cs"
+      exclude:
+        - "**/*.csproj"
+    require:
+      - work_item
+      - summary
+      - tests_changed
+      - repro
+  
+  # Entity Framework storage implementation
+  - name: "EF Core Storage Changes"
+    paths:
+      include:
+        - "src/ToggleNet.EntityFrameworkCore/**/*.cs"
+      exclude:
+        - "**/*.csproj"
+    require:
+      - work_item
+      - summary
+      - tests_changed
+  
+  # ASP.NET Core integration
+  - name: "ASP.NET Core Integration"
+    paths:
+      include:
+        - "src/ToggleNet.AspNetCore/**/*.cs"
+      exclude:
+        - "**/*.csproj"
+    require:
+      - work_item
+      - summary
+      - tests_changed
+  
+  # Dashboard application
+  - name: "Dashboard Changes"
+    paths:
+      include:
+        - "src/ToggleNet.Dashboard/**/*.cs"
+        - "src/ToggleNet.Dashboard/**/*.razor"
+        - "src/ToggleNet.Dashboard/**/*.cshtml"
+      exclude:
+        - "**/*.csproj"
+    require:
+      - work_item
+      - summary
+      - tests_changed
+  
+  # Entitlements and subscription integrations
+  - name: "Entitlements System"
+    paths:
+      include:
+        - "src/ToggleNet.Entitlements.*/**/*.cs"
+      exclude:
+        - "**/*.csproj"
+    require:
+      - work_item
+      - summary
+      - tests_changed
+      - rollout_plan
+  
+  # Project files and dependencies
+  - name: "Project Configuration"
+    paths:
+      include:
+        - "**/*.csproj"
+        - "**/*.sln"
+        - "Directory.Build.props"
+        - "Directory.Packages.props"
+    require:
+      - work_item
+      - summary
+      - rollout_plan
+  
+  # GitHub Actions CI/CD
+  - name: "CI/CD Pipeline"
+    paths:
+      include:
+        - ".github/workflows/**/*.yml"
+        - ".github/workflows/**/*.yaml"
+    require:
+      - work_item
+      - summary
+      - rollout_plan
+      - tests_changed
+  
+  # NuGet package metadata
+  - name: "NuGet Packaging"
+    paths:
+      include:
+        - "**/nuget.config"
+        - "**/*.nuspec"
+    require:
+      - work_item
+      - summary
+      - rollout_plan
+  
+  # Documentation updates
+  - name: "Documentation"
+    paths:
+      include:
+        - "**/*.md"
+        - "docs/**"
+      exclude:
+        - "blog-post.md"
+    require:
+      - summary
+  
+  # Sample applications
+  - name: "Sample Application"
+    paths:
+      include:
+        - "samples/**/*.cs"
+        - "samples/**/*.razor"
+        - "samples/**/*.cshtml"
+    require:
+      - work_item
+      - summary
+  
+  # Database migrations
+  - name: "Database Migrations"
+    paths:
+      include:
+        - "**/Migrations/**/*.cs"
+    require:
+      - work_item
+      - summary
+      - rollout_plan
+      - repro
